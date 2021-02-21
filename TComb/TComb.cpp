@@ -27,6 +27,7 @@
 */
 
 #include "TComb.h"
+#include <inttypes.h>
 
 extern "C" void buildFinalMask_SSE2(const uint8_t *s1p, const uint8_t *s2p, const uint8_t *m1p, uint8_t *dstp, int stride, int width, int height, int thresh);
 extern "C" void andNeighborsInPlace_SSE2(uint8_t *srcp, int stride, int width, int height);
@@ -929,7 +930,7 @@ bool TComb::checkSceneChange(PlanarFrame *s1, PlanarFrame *s2, int n, IScriptEnv
 	{
 		if (debug)
 		{
-			sprintf_s(buf, "TComb: Frame %d: SceneChange detected! (%u,%u)\n", n, diff, diffmaxsc);
+			sprintf_s(buf, "TComb: Frame %d: SceneChange detected! (%" PRId64 ",%u)\n", n, diff, diffmaxsc);
 			OutputDebugString(buf);
 		}
 
@@ -938,7 +939,7 @@ bool TComb::checkSceneChange(PlanarFrame *s1, PlanarFrame *s2, int n, IScriptEnv
 
 	if (debug)
 	{
-		sprintf_s(buf, "TComb: Frame %d: Not a SceneChange (%u,%u)\n", n, diff, diffmaxsc);
+		sprintf_s(buf, "TComb: Frame %d: Not a SceneChange (%" PRId64 ",%u)\n", n, diff, diffmaxsc);
 		OutputDebugString(buf);
 	}
 
