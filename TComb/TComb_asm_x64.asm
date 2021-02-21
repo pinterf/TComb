@@ -47,7 +47,7 @@ yloop:
 	xor rcx,rcx
 xloop:
 	movdqa xmm0,[rax+rcx]
-	movdqa xmm1,[rdx+rcx]
+	movdqa xmm1,[rbx+rcx]
 	movdqa xmm2,xmm0
 	psubusb xmm0,xmm1
 	psubusb xmm1,xmm2
