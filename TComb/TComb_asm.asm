@@ -609,7 +609,9 @@ VerticalBlur3_SSE2 proc public uses ebx esi edi srcp:dword,dstp:dword,stride:dwo
 	psrlw xmm6,15
 	psllw xmm6,1
 	pxor xmm7,xmm7
-	
+
+	xor ecx,ecx
+
 toploop:
 	movdqa xmm0,[eax+ecx]
 	pavgb xmm0,[edi+ecx]
