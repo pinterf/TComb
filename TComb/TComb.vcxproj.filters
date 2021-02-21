@@ -26,12 +26,6 @@
     <ClInclude Include="avisynth.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="internal.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="memcpy_amd.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="PlanarFrame.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -70,18 +64,6 @@
   </ItemGroup>
   <ItemGroup>
     <MASM Include="TComb_asm.asm">
-      <Filter>Source Files</Filter>
-    </MASM>
-    <MASM Include="memcpy_amd_asm.asm">
-      <Filter>Source Files</Filter>
-    </MASM>
-    <MASM Include="PlanarFrame_asm.asm">
-      <Filter>Source Files</Filter>
-    </MASM>
-    <MASM Include="memcpy_amd_asm_x64.asm">
-      <Filter>Source Files</Filter>
-    </MASM>
-    <MASM Include="PlanarFrame_asm_x64.asm">
       <Filter>Source Files</Filter>
     </MASM>
     <MASM Include="TComb_asm_x64.asm">

@@ -199,8 +199,6 @@
     <ClInclude Include="avs\minmax.h" />
     <ClInclude Include="avs\types.h" />
     <ClInclude Include="avs\win.h" />
-    <ClInclude Include="internal.h" />
-    <ClInclude Include="memcpy_amd.h" />
     <ClInclude Include="PlanarFrame.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="TComb.h" />
@@ -209,18 +207,6 @@
     <ResourceCompile Include="TComb.rc" />
   </ItemGroup>
   <ItemGroup>
-    <MASM Include="memcpy_amd_asm.asm">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </MASM>
-    <MASM Include="memcpy_amd_asm_x64.asm">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </MASM>
-    <MASM Include="PlanarFrame_asm.asm">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </MASM>
-    <MASM Include="PlanarFrame_asm_x64.asm">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </MASM>
     <MASM Include="TComb_asm.asm">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </MASM>
