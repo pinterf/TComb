@@ -49,7 +49,7 @@ public:
 	PlanarFrame *orig, *msk1, *msk2;
 	PlanarFrame **b, *avg, *omsk;
 	TCombFrame::TCombFrame();
-	TCombFrame::TCombFrame(VideoInfo &vi);
+	TCombFrame::TCombFrame(VideoInfo &vi, int cpuFlags);
 	TCombFrame::~TCombFrame();
 	void TCombFrame::setFNum(int i);
 };
@@ -60,7 +60,7 @@ public:
 	TCombFrame **frames;
 	int start_pos, size;
 	TCombCache::TCombCache();
-	TCombCache::TCombCache(int _size, VideoInfo &vi);
+	TCombCache::TCombCache(int _size, VideoInfo &vi, int cpuFlags);
 	TCombCache::~TCombCache();
 	void TCombCache::resetCacheStart(int first, int last);
 	int TCombCache::getCachePos(int n);

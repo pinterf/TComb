@@ -216,13 +216,15 @@ TComb::TComb(PClip _child, int _mode, int _fthreshL, int _fthreshC, int _othresh
 
 	child->SetCacheHints(CACHE_NOTHING, 0);
 
-	dstPF = new PlanarFrame(vi);
-	tmpPF = new PlanarFrame(vi);
-	minPF = new PlanarFrame(vi);
-	maxPF = new PlanarFrame(vi);
-	padPF = new PlanarFrame();
+  const int cpuFlags = env->GetCPUFlags();
+
+	dstPF = new PlanarFrame(vi, cpuFlags);
+	tmpPF = new PlanarFrame(vi, cpuFlags);
+	minPF = new PlanarFrame(vi, cpuFlags);
+	maxPF = new PlanarFrame(vi, cpuFlags);
+	padPF = new PlanarFrame(cpuFlags);
 	padPF->createPlanar(vi.height + 4, vi.width + 4, vi.IsYV12() ? 1 : 2);
-	tdc = new TCombCache(21, vi);
+	tdc = new TCombCache(21, vi, cpuFlags);
 
 	if (scthresh < 0.0)
 		diffmaxsc = 0xFFFFFFFF;
@@ -1124,20 +1126,20 @@ TCombFrame::TCombFrame()
 	b = NULL;
 }
 
-TCombFrame::TCombFrame(VideoInfo &vi)
+TCombFrame::TCombFrame(VideoInfo &vi, int cpuFlags)
 {
 	fnum = -20;
 	sc = false;
 	memset(isValid, 0, 11 * sizeof(bool));
-	orig = new PlanarFrame(vi);
-	msk1 = new PlanarFrame(vi);
-	msk2 = new PlanarFrame(vi);
-	omsk = new PlanarFrame(vi);
-	avg = new PlanarFrame(vi);
+	orig = new PlanarFrame(vi, cpuFlags);
+	msk1 = new PlanarFrame(vi, cpuFlags);
+	msk2 = new PlanarFrame(vi, cpuFlags);
+	omsk = new PlanarFrame(vi, cpuFlags);
+	avg = new PlanarFrame(vi, cpuFlags);
 	b = (PlanarFrame **)malloc(6 * sizeof(PlanarFrame*));
 	for (int i = 0; i<6; ++i)
 	{
-		b[i] = new PlanarFrame(vi);
+		b[i] = new PlanarFrame(vi, cpuFlags);
 	}
 }
 
@@ -1171,7 +1173,7 @@ TCombCache::TCombCache()
 	start_pos = size = -20;
 }
 
-TCombCache::TCombCache(int _size, VideoInfo &vi)
+TCombCache::TCombCache(int _size, VideoInfo &vi, int cpuFlags)
 {
 	frames = NULL;
 	start_pos = size = -20;
@@ -1182,7 +1184,7 @@ TCombCache::TCombCache(int _size, VideoInfo &vi)
 		frames = (TCombFrame**)malloc(size*sizeof(TCombFrame*));
 		memset(frames, 0, size*sizeof(TCombFrame*));
 		for (int i = 0; i<size; ++i)
-			frames[i] = new TCombFrame(vi);
+			frames[i] = new TCombFrame(vi, cpuFlags);
 	}
 }
 
