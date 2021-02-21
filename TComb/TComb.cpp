@@ -52,8 +52,10 @@ PVideoFrame __stdcall TComb::GetFrame(int n, IScriptEnvironment* env)
   int lc = mode == 2 ? 0x111 : (mode == 1 ? 0x110 : 0x1);
   for (int i = -10; i <= 10; ++i)
   {
-    if (tdc->frames[tdc->getCachePos(10 + i)]->fnum != n + i)
-      insertFrame(child->GetFrame(mapn(n + i), env), 10 + i, n + i, lc, env);
+    if (tdc->frames[tdc->getCachePos(10 + i)]->fnum != n + i) {
+      PVideoFrame frame = child->GetFrame(mapn(n + i), env);
+      insertFrame(frame, 10 + i, n + i, lc, env);
+    }
   }
   if (mode == 0 || mode == 2)
     buildDiffMasks(0x1, env);
@@ -196,8 +198,8 @@ void TComb::getFinalMasks(int lc, IScriptEnvironment* env)
 
 TComb::TComb(PClip _child, int _mode, int _fthreshL, int _fthreshC, int _othreshL, int _othreshC,
   bool _map, double _scthresh, bool _debug, int _opt, IScriptEnvironment* env) :
-  GenericVideoFilter(_child), mode(_mode), fthreshL(_fthreshL), fthreshC(_fthreshC),
-  othreshL(_othreshL), othreshC(_othreshC), map(_map), scthresh(_scthresh), debug(_debug), opt(_opt)
+  GenericVideoFilter(_child), map(_map), debug(_debug), fthreshL(_fthreshL), fthreshC(_fthreshC),
+  othreshL(_othreshL), othreshC(_othreshC), mode(_mode), opt(_opt), scthresh(_scthresh)
 {
   dstPF = tmpPF = NULL;
   minPF = maxPF = NULL;
@@ -230,7 +232,10 @@ TComb::TComb(PClip _child, int _mode, int _fthreshL, int _fthreshC, int _othresh
   if (scthresh < 0.0)
     diffmaxsc = 0xFFFFFFFF;
   else
-    diffmaxsc = unsigned long(((vi.width >> 4) << 4) * vi.height * 219.0 * scthresh / 100.0);
+    // no high bit depth scaling here
+    // Warning: this mod16 must match with the calculation in "checkSceneChange"
+    diffmaxsc = (unsigned long)((double(((vi.width >> 4) << 4) * vi.height * (235 - 16)) * scthresh) / 100.0);
+
 
   if (debug)
   {
