@@ -908,6 +908,7 @@ bool TComb::checkSceneChange(PlanarFrame* s1, PlanarFrame* s2, int n, IScriptEnv
   const uint8_t* s1p = s1->GetPtr(0);
   const uint8_t* s2p = s2->GetPtr(0);
   const int height = s1->GetHeight(0);
+  // !! this mod16 must match with the default diffmaxsc initialization!
   const int width = (s1->GetWidth(0) >> 4) << 4;
   const int stride = s1->GetPitch(0);
   int64_t diff = 0;
