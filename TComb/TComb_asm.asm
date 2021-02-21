@@ -700,10 +700,11 @@ HorizontalBlur3_SSE2 proc public srcp:dword,dstp:dword,stride:dword,width_:dword
 	mov eax,srcp
 	mov edx,dstp
 	pxor xmm7,xmm7
+	; 0x0002,for rounding
 	pcmpeqb xmm6,xmm6
 	psrlw xmm6,15
 	psllw xmm6,1
-	
+
 yloop:
 	xor ecx,ecx
 	align 16
@@ -720,12 +721,19 @@ xloop:
 	punpckhbw xmm3,xmm7
 	punpckhbw xmm4,xmm7
 	punpckhbw xmm5,xmm7
+	; center * 2
 	psllw xmm1,1
 	psllw xmm4,1
 	paddw xmm1,xmm0
 	paddw xmm4,xmm3
 	paddw xmm1,xmm2
 	paddw xmm4,xmm5
+
+	; add 2 to sum
+	paddw xmm1,xmm6
+	paddw xmm4,xmm6
+
+	; divide by 4
 	psrlw xmm1,2
 	psrlw xmm4,2
 	packuswb xmm1,xmm4
