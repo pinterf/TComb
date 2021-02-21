@@ -1060,8 +1060,8 @@ void TComb::HorizontalBlur6(PlanarFrame* src, PlanarFrame* dst, int lc, IScriptE
 
     for (int y = 0; y < height; y++)
     {
-      dstp[0] = (srcp[0] * 6 + (srcp[1] << 4) + (srcp[2] << 1) + 8) >> 4;
-      dstp[1] = (((srcp[0] + srcp[2]) >> 2) + srcp[1] * 6 + (srcp[3] << 1) + 8) >> 4;
+      dstp[0] = (srcp[0] * 6 + (srcp[1] << 3) + (srcp[2] << 1) + 8) >> 4;
+      dstp[1] = (((srcp[0] + srcp[2]) << 2) + srcp[1] * 6 + (srcp[3] << 1) + 8) >> 4;
 
       for (int x = 2; x < 16; x++)
         dstp[x] = (srcp[x - 2] + ((srcp[x - 1] + srcp[x + 1]) << 2) + srcp[x] * 6 + srcp[x + 2] + 8) >> 4;
@@ -1078,17 +1078,20 @@ void TComb::HorizontalBlur6(PlanarFrame* src, PlanarFrame* dst, int lc, IScriptE
   }
   else
   {
-    dstp[0] = (srcp[0] * 6 + (srcp[1] << 4) + (srcp[2] << 1) + 8) >> 4;
-    dstp[1] = (((srcp[0] + srcp[2]) << 2) + srcp[1] * 6 + (srcp[3] << 1) + 8) >> 4;
+    for (int y = 0; y < height; y++)
+    {
+      dstp[0] = (srcp[0] * 6 + (srcp[1] << 3) + (srcp[2] << 1) + 8) >> 4;
+      dstp[1] = (((srcp[0] + srcp[2]) << 2) + srcp[1] * 6 + (srcp[3] << 1) + 8) >> 4;
 
-    for (int x = 2; x < width - 2; ++x)
-      dstp[x] = (srcp[x - 2] + ((srcp[x - 1] + srcp[x + 1]) << 2) + srcp[x] * 6 + srcp[x + 2] + 8) >> 4;
+      for (int x = 2; x < width - 2; ++x)
+        dstp[x] = (srcp[x - 2] + ((srcp[x - 1] + srcp[x + 1]) << 2) + srcp[x] * 6 + srcp[x + 2] + 8) >> 4;
 
-    dstp[width - 2] = ((srcp[width - 4] << 1) + ((srcp[width - 3] + srcp[width - 1]) << 2) + srcp[width - 2] * 6 + 8) >> 4;
-    dstp[width - 1] = ((srcp[width - 3] << 1) + (srcp[width - 2] << 3) + srcp[width - 1] * 6 + 8) >> 4;
+      dstp[width - 2] = ((srcp[width - 4] << 1) + ((srcp[width - 3] + srcp[width - 1]) << 2) + srcp[width - 2] * 6 + 8) >> 4;
+      dstp[width - 1] = ((srcp[width - 3] << 1) + (srcp[width - 2] << 3) + srcp[width - 1] * 6 + 8) >> 4;
 
-    srcp += stride;
-    dstp += stride;
+      srcp += stride;
+      dstp += stride;
+    }
   }
 }
 
