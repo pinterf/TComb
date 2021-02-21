@@ -1269,11 +1269,11 @@ xloop:
 	paddw xmm1,xmm3
 	paddw xmm6,xmm8
 
-	; (srcp[x-1 + srcp[x+])*4
+	; (srcp[x-1 + srcp[x+1])*4
 	psllw xmm1,2
 	psllw xmm6,2
 
-	; (srcp[x-1 + srcp[x+])*4 + srcp[x-2] + srcp[x+2]
+	; (srcp[x-1] + srcp[x+1])*4 + srcp[x-2] + srcp[x+2]
 	paddw xmm0,xmm1
 	paddw xmm5,xmm6
 
@@ -1297,7 +1297,7 @@ xloop:
 	cmp rcx,r9
 	jl xloop
 
-	add rcx,r8
+	add rax,r8
 	add rdx,r8
 	dec r10d
 	jnz yloop
