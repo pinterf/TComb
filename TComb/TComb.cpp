@@ -482,7 +482,12 @@ void TComb::absDiff(PlanarFrame *src1, PlanarFrame *src2, PlanarFrame *dst, int 
 	const int stride = src1->GetPitch(0);
 	const int src2_pitch = src2->GetPitch(0);
 	const int dst_pitch = dst->GetPitch(0);
+  // sanity check; FIXME: I haved a feeling that strides are not necessarily equal?
+  if (src2_pitch != stride)
+    env->ThrowError("AbsDiff sources have difference pitches!");
 
+  if (dst_pitch != stride)
+    env->ThrowError("AbsDiff source and destination have difference pitches!");
 
 	if (cpu&CPUF_SSE2)
 		absDiff_SSE2(srcp1, srcp2, dstp, stride, width, height);
