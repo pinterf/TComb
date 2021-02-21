@@ -1146,7 +1146,7 @@ yloop:
 xloop:
 	movdqu xmm0,[rax+rcx-1]
 	movdqa xmm1,[rax+rcx]
-	movdqu xmm4,[rax+rcx+1]
+	movdqu xmm2,[rax+rcx+1]
 	movdqa xmm3,xmm0
 	movdqa xmm4,xmm1
 	movdqa xmm5,xmm2

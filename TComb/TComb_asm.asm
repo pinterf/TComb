@@ -710,7 +710,7 @@ yloop:
 xloop:
 	movdqu xmm0,[eax+ecx-1]
 	movdqa xmm1,[eax+ecx]
-	movdqu xmm4,[eax+ecx+1]
+	movdqu xmm2,[eax+ecx+1]
 	movdqa xmm3,xmm0
 	movdqa xmm4,xmm1
 	movdqa xmm5,xmm2
