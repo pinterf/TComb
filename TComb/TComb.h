@@ -71,7 +71,7 @@ class TComb : public GenericVideoFilter
 public:
 	PVideoFrame __stdcall TComb::GetFrame(int n, IScriptEnvironment *env);
 	TComb::TComb(PClip _child, int _mode, int _fthreshL, int _fthreshC, int _othreshL,
-		int othreshC, bool _map, double _scthresh, bool _debug, IScriptEnvironment *env);
+		int othreshC, bool _map, double _scthresh, bool _debug, int _opt, IScriptEnvironment *env);
 	TComb::~TComb();
 private:
 	bool map, debug;

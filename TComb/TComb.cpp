@@ -194,9 +194,9 @@ void TComb::getFinalMasks(int lc, IScriptEnvironment *env)
 }
 
 TComb::TComb(PClip _child, int _mode, int _fthreshL, int _fthreshC, int _othreshL, int _othreshC,
-	bool _map, double _scthresh, bool _debug, IScriptEnvironment *env) :
+	bool _map, double _scthresh, bool _debug, int _opt, IScriptEnvironment *env) :
 	GenericVideoFilter(_child), mode(_mode), fthreshL(_fthreshL), fthreshC(_fthreshC),
-	othreshL(_othreshL), othreshC(_othreshC), map(_map), scthresh(_scthresh), debug(_debug)
+	othreshL(_othreshL), othreshC(_othreshC), map(_map), scthresh(_scthresh), debug(_debug), opt(_opt)
 {
 	dstPF = tmpPF = NULL;
 	minPF = maxPF = NULL;
@@ -370,7 +370,7 @@ void TComb::buildFinalFrame(PlanarFrame *p2, PlanarFrame *p1, PlanarFrame *src,
 void TComb::buildFinalMask(PlanarFrame *s1, PlanarFrame *s2, PlanarFrame *m1,
 	PlanarFrame *dst, int lc, IScriptEnvironment *env)
 {
-	const int cpu = env->GetCPUFlags();
+	const int cpu = opt == 0 ? 0 : env->GetCPUFlags();
 
 	int start = 0, stop = 3;
 	getStartStop(lc, start, stop);
@@ -410,7 +410,7 @@ void TComb::buildFinalMask(PlanarFrame *s1, PlanarFrame *s2, PlanarFrame *m1,
 
 void TComb::andNeighborsInPlace(PlanarFrame *src, int lc, IScriptEnvironment *env)
 {
-	const int cpu = env->GetCPUFlags();
+	const int cpu = opt == 0 ? 0 : env->GetCPUFlags();
 
 	uint8_t *srcp = src->GetPtr(0);
 	const int height = src->GetHeight(0);
@@ -472,7 +472,7 @@ void TComb::andNeighborsInPlace(PlanarFrame *src, int lc, IScriptEnvironment *en
 
 void TComb::absDiff(PlanarFrame *src1, PlanarFrame *src2, PlanarFrame *dst, int lc, IScriptEnvironment *env)
 {
-	const int cpu = env->GetCPUFlags();
+	const int cpu = opt == 0 ? 0 : env->GetCPUFlags();
 
 	const uint8_t *srcp1 = src1->GetPtr(0);
 	const uint8_t *srcp2 = src2->GetPtr(0);
@@ -482,6 +482,7 @@ void TComb::absDiff(PlanarFrame *src1, PlanarFrame *src2, PlanarFrame *dst, int 
 	const int stride = src1->GetPitch(0);
 	const int src2_pitch = src2->GetPitch(0);
 	const int dst_pitch = dst->GetPitch(0);
+
 
 	if (cpu&CPUF_SSE2)
 		absDiff_SSE2(srcp1, srcp2, dstp, stride, width, height);
@@ -501,7 +502,7 @@ void TComb::absDiff(PlanarFrame *src1, PlanarFrame *src2, PlanarFrame *dst, int 
 
 void TComb::absDiffAndMinMask(PlanarFrame *src1, PlanarFrame *src2, PlanarFrame *dst, int lc, IScriptEnvironment *env)
 {
-	const int cpu = env->GetCPUFlags();
+	const int cpu = opt == 0 ? 0 : env->GetCPUFlags();
 
 	const uint8_t *srcp1 = src1->GetPtr(0);
 	const uint8_t *srcp2 = src2->GetPtr(0);
@@ -533,7 +534,7 @@ void TComb::absDiffAndMinMask(PlanarFrame *src1, PlanarFrame *src2, PlanarFrame 
 void TComb::absDiffAndMinMaskThresh(PlanarFrame *src1, PlanarFrame *src2, PlanarFrame *dst,
 	int lc, IScriptEnvironment *env)
 {
-	const int cpu = env->GetCPUFlags();
+	const int cpu = opt == 0 ? 0 : env->GetCPUFlags();
 
 	const uint8_t *srcp1 = src1->GetPtr(0);
 	const uint8_t *srcp2 = src2->GetPtr(0);
@@ -606,7 +607,7 @@ void TComb::copyPad(PlanarFrame *src, PlanarFrame *dst, int lc, IScriptEnvironme
 void TComb::MinMax(PlanarFrame *src, PlanarFrame *dmin, PlanarFrame *dmax, int lc,
 	IScriptEnvironment *env)
 {
-	const int cpu = env->GetCPUFlags();
+	const int cpu = opt == 0 ? 0 : env->GetCPUFlags();
 
 	copyPad(src, padPF, lc, env);
 
@@ -657,7 +658,7 @@ void TComb::MinMax(PlanarFrame *src, PlanarFrame *dmin, PlanarFrame *dmax, int l
 void TComb::checkOscillation5(PlanarFrame *p2, PlanarFrame *p1, PlanarFrame *s1,
 	PlanarFrame *n1, PlanarFrame *n2, PlanarFrame *dst, int lc, IScriptEnvironment *env)
 {
-	const int cpu = env->GetCPUFlags();
+	const int cpu = opt == 0 ? 0 : env->GetCPUFlags();
 
 	int start = 0, stop = 3;
 	getStartStop(lc, start, stop);
@@ -706,7 +707,7 @@ void TComb::checkOscillation5(PlanarFrame *p2, PlanarFrame *p1, PlanarFrame *s1,
 void TComb::calcAverages(PlanarFrame *s1, PlanarFrame *s2, PlanarFrame *dst, int lc,
 	IScriptEnvironment *env)
 {
-	const int cpu = env->GetCPUFlags();
+	const int cpu = opt == 0 ? 0 : env->GetCPUFlags();
 
 	int start = 0, stop = 3;
 	getStartStop(lc, start, stop);
@@ -739,7 +740,7 @@ void TComb::calcAverages(PlanarFrame *s1, PlanarFrame *s2, PlanarFrame *dst, int
 void TComb::checkAvgOscCorrelation(PlanarFrame *s1, PlanarFrame *s2, PlanarFrame *s3,
 	PlanarFrame *s4, PlanarFrame *dst, int lc, IScriptEnvironment *env)
 {
-	const int cpu = env->GetCPUFlags();
+	const int cpu = opt == 0 ? 0 : env->GetCPUFlags();
 
 	int start = 0, stop = 3;
 	getStartStop(lc, start, stop);
@@ -781,7 +782,7 @@ void TComb::checkAvgOscCorrelation(PlanarFrame *s1, PlanarFrame *s2, PlanarFrame
 void TComb::or3Masks(PlanarFrame *s1, PlanarFrame *s2, PlanarFrame *s3,
 	PlanarFrame *dst, int lc, IScriptEnvironment *env)
 {
-	const int cpu = env->GetCPUFlags();
+	const int cpu = opt == 0 ? 0 : env->GetCPUFlags();
 
 	int start = 0, stop = 3;
 	getStartStop(lc, start, stop);
@@ -816,7 +817,7 @@ void TComb::or3Masks(PlanarFrame *s1, PlanarFrame *s2, PlanarFrame *s3,
 void TComb::orAndMasks(PlanarFrame *s1, PlanarFrame *s2, PlanarFrame *dst, int lc,
 	IScriptEnvironment *env)
 {
-	const int cpu = env->GetCPUFlags();
+	const int cpu = opt == 0 ? 0 : env->GetCPUFlags();
 
 	int start = 0, stop = 3;
 	getStartStop(lc, start, stop);
@@ -849,7 +850,7 @@ void TComb::orAndMasks(PlanarFrame *s1, PlanarFrame *s2, PlanarFrame *dst, int l
 void TComb::andMasks(PlanarFrame *s1, PlanarFrame *s2, PlanarFrame *dst, int lc,
 	IScriptEnvironment *env)
 {
-	const int cpu = env->GetCPUFlags();
+	const int cpu = opt == 0 ? 0 : env->GetCPUFlags();
 
 	int start = 0, stop = 3;
 	getStartStop(lc, start, stop);
@@ -891,7 +892,7 @@ bool TComb::checkSceneChange(PlanarFrame *s1, PlanarFrame *s2, int n, IScriptEnv
 		return false;
 	}
 
-	const int cpu = env->GetCPUFlags();
+	const int cpu = opt == 0 ? 0 : env->GetCPUFlags();
 
 	const uint8_t *s1p = s1->GetPtr(0);
 	const uint8_t *s2p = s2->GetPtr(0);
@@ -941,7 +942,7 @@ bool TComb::checkSceneChange(PlanarFrame *s1, PlanarFrame *s2, int n, IScriptEnv
 
 void TComb::VerticalBlur3(PlanarFrame *src, PlanarFrame *dst, int lc, IScriptEnvironment *env)
 {
-	const int cpu = env->GetCPUFlags();
+	const int cpu = opt == 0 ? 0 : env->GetCPUFlags();
 
 	const uint8_t *srcp = src->GetPtr(0);
 	uint8_t *dstp = dst->GetPtr(0);
@@ -982,7 +983,7 @@ void TComb::VerticalBlur3(PlanarFrame *src, PlanarFrame *dst, int lc, IScriptEnv
 
 void TComb::HorizontalBlur3(PlanarFrame *src, PlanarFrame *dst, int lc, IScriptEnvironment *env)
 {
-	const int cpu = env->GetCPUFlags();
+	const int cpu = opt == 0 ? 0 : env->GetCPUFlags();
 
 	const uint8_t *srcp = src->GetPtr(0);
 	uint8_t *dstp = dst->GetPtr(0);
@@ -1031,7 +1032,7 @@ void TComb::HorizontalBlur3(PlanarFrame *src, PlanarFrame *dst, int lc, IScriptE
 
 void TComb::HorizontalBlur6(PlanarFrame *src, PlanarFrame *dst, int lc, IScriptEnvironment *env)
 {
-	const int cpu = env->GetCPUFlags();
+	const int cpu = opt == 0 ? 0 : env->GetCPUFlags();
 
 	const uint8_t *srcp = src->GetPtr(0);
 	uint8_t *dstp = dst->GetPtr(0);
@@ -1242,7 +1243,7 @@ AVSValue __cdecl Create_TComb(AVSValue args, void* user_data, IScriptEnvironment
 		env->ThrowError("TComb: Caught an AvisynthError on invoke (%s)!", e.msg);
 	}
 	sepf = new TComb(sepf, args[1].AsInt(2), args[2].AsInt(4), args[3].AsInt(5), args[4].AsInt(5),
-		args[5].AsInt(6), args[6].AsBool(false), args[7].AsFloat(12.0), args[8].AsBool(false), env);
+		args[5].AsInt(6), args[6].AsBool(false), args[7].AsFloat(12.0), args[8].AsBool(false), args[9].AsInt(-1), env);
 	try
 	{
 		sepf = env->Invoke("Weave", sepf).AsClip();
@@ -1265,7 +1266,7 @@ extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit3(IScri
 	AVS_linkage = vectors;
 
 	env->AddFunction("TComb", "c[mode]i[fthreshL]i[fthreshC]i[othreshL]i[othreshC]i[map]b" \
-		"[scthresh]f[debug]b", Create_TComb, 0);
+		"[scthresh]f[debug]b[opt]i", Create_TComb, 0);
 
 	return "TComb plugin";
 }
