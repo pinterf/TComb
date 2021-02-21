@@ -585,7 +585,9 @@ xloop:
 	movdqa xmm2,xmm1
 	psrldq xmm1,8
 	paddd xmm2,xmm1
-	movd [diffp],xmm2
+
+	mov eax, diffp
+	movd DWORD PTR [eax],xmm2
 
 	ret
 	

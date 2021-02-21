@@ -956,7 +956,9 @@ xloop:
 	movdqa xmm2,xmm1
 	psrldq xmm1,8
 	paddq xmm2,xmm1
-	movq diffp,xmm2
+
+  mov rax,diffp
+	movd QWORD PTR [rax],xmm2
 
 	pop rsi
 	pop rbp
