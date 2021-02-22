@@ -1,8 +1,9 @@
                                                                                                       |
                                     TComb for AviSynth v2.6.x                                         |
-                                       v2.0 (17 July 2015)                                            |
+                                       v2.1 (22 February 2021)                                        |
                                            by tritical                                                |
-                                       modified by Elegant                                            |
+                                       modified by Elegant (v2.0; 17 July 2015)                       |
+                                       additional work by pinterf                                     |
                                                                                                       |
                                             HELP FILE                                                 |
 -------------------------------------------------------------------------------------------------------
@@ -107,6 +108,14 @@ PARAMETERS:
 
        default:  false  (bool)
 
+   opt - (another debug parameter: CPU)
+
+       0: C only (no assembly at all)
+       other: automatically choose SSE2 or C
+
+       For development use: opt parameters can appear/disappear/change their meaning between versions
+
+       default:  -1 (int)
 
 
 BASIC SETUP/USAGE:
@@ -150,11 +159,31 @@ BASIC SETUP/USAGE:
 
 CHANGE LIST:
 
-   07/26/2015  v2.0.0.1
+   02/22/2021  v2.1 (pinterf)
+       + project forked to https://github.com/pinterf/TComb/ 
+       + param 'opt' is back for debug. 0 means pure C code
+       + Fix bug in x64 assembler buildFinalMask_SSE2
+       + Fix crash in 32bit version of VerticalBlur3_SSE2
+       + Fix: scenechange SSE2 did not work
+       + Fix: x64 assembler HorizontalBlur6_SSE2
+       + Fix: HorizontalBlur6: C only did top 2 lines. SSE2 bad top 2 lines
+       + Fix: HorizontalBlur3_SSE2 artifacts (both x86 and x64)
+       + Fix: HorizontalBlur3_SSE2 missing rounder (both x86 and x64)
+       (now C and SSE2 is giving identical results)
+       + Code:
+           + Update to Visual Studio 2019
+           + update to actual Avisynth+ headers
+           + clang-friendly code
+           + removed memcpy and bitblt variants
+           + replaced planarframes module with the one I updated in tivtc project for 
+             avisynth+ and hbd preparation    
+           + Fix debug build configuration in VS project settings
+
+   07/26/2015  v2.0.0.1 (Elegant)
        + Corrected the masks used in HorizontalBlur6 for x64.
 
 	   
-   07/17/2015  v2.0
+   07/17/2015  v2.0 (Elegant)
 
        + Removed buffering of frames/info that weren't actually used (was there for
          development/testing purposes). Should save a lot of RAM usage.
