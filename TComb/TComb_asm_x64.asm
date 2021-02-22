@@ -471,6 +471,8 @@ checkOscillation5_SSE2 proc public frame
 .pushreg rsi
 	push rdi
 .pushreg rdi
+	push r12
+.pushreg r12
 	sub rsp,64
 .allocstack 64
 	movdqu oword ptr[rsp],xmm6
@@ -562,6 +564,7 @@ xloop:
 	movdqu xmm7,oword ptr[rsp+16]
 	movdqu xmm6,oword ptr[rsp]
 	add rsp,64
+	pop r12
 	pop rdi
 	pop rsi
 	pop rbx
