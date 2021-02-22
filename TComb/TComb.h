@@ -36,6 +36,7 @@
 
 #define VERSION "v2.1"
 
+//#define OLD_ASM
 
 #define min3(a,b,c) min(min(a,b),c)
 #define max3(a,b,c) max(max(a,b),c)
@@ -124,3 +125,56 @@ private:
   bool checkSceneChange(PlanarFrame* s1, PlanarFrame* s2, int n, IScriptEnvironment* env);
   void andNeighborsInPlace(PlanarFrame* src, int lc, IScriptEnvironment* env);
 };
+
+void checkSceneChangePlanar_1_SSE2_simd(const uint8_t* prvp, const uint8_t* srcp,
+  int height, int width, int prv_pitch, int src_pitch, uint64_t& diffp);
+
+template<typename pixel_t>
+void checkSceneChangePlanar_1_c(const pixel_t* prvp, const pixel_t* srcp,
+  int height, int width, int prv_pitch, int src_pitch, uint64_t& diffp);
+
+void andMasks_SSE2_simd(const uint8_t* s1p, const uint8_t* s2p, uint8_t* dstp, int stride, int width, int height);
+void andMasks_c(const uint8_t* s1p, const uint8_t* s2p, uint8_t* dstp, int stride, int width, int height);
+
+void orAndMasks_SSE2_simd(const uint8_t* s1p, const uint8_t* s2p, uint8_t* dstp, int stride, int width, int height);
+void orAndMasks_c(const uint8_t* s1p, const uint8_t* s2p, uint8_t* dstp, int stride, int width, int height);
+
+void or3Masks_SSE2_simd(const uint8_t * s1p, const uint8_t * s2p, const uint8_t * s3p, uint8_t * dstp, int stride, int width, int height);
+void or3Masks_c(const uint8_t* s1p, const uint8_t* s2p, const uint8_t* s3p, uint8_t* dstp, int stride, int width, int height);
+
+void calcAverages_SSE2_simd(const uint8_t * s1p, const uint8_t * s2p, uint8_t * dstp, int stride, int width, int height);
+void calcAverages_c(const uint8_t* s1p, const uint8_t* s2p, uint8_t* dstp, int stride, int width, int height);
+
+void MinMax_SSE2_simd(const uint8_t * srcp, uint8_t * dstpMin, uint8_t * dstpMax, int src_stride, int dmin_stride, int width, int height, int thresh);
+void MinMax_c(const uint8_t* srcp, uint8_t* dstpMin, uint8_t* dstpMax, int src_stride, int dmin_stride, int width, int height, int thresh);
+
+void absDiff_SSE2_simd(const uint8_t * srcp1, const uint8_t * srcp2, uint8_t * dstp, int stride, int width, int height);
+void absDiff_c(const uint8_t* srcp1, const uint8_t* srcp2, uint8_t* dstp, int stride, int width, int height);
+
+void buildFinalMask_SSE2_simd(const uint8_t * s1p, const uint8_t * s2p, const uint8_t * m1p, uint8_t * dstp, int stride, int width, int height, int thresh);
+void buildFinalMask_c(const uint8_t * s1p, const uint8_t * s2p, const uint8_t * m1p, uint8_t * dstp, int stride, int width, int height, int thresh);
+
+void checkOscillation5_SSE2_simd(const uint8_t * p2p, const uint8_t * p1p, const uint8_t * s1p, const uint8_t * n1p, const uint8_t * n2p, uint8_t * dstp, int stride, int width, int height, int thresh);
+void checkOscillation5_c(const uint8_t * p2p, const uint8_t * p1p, const uint8_t * s1p, const uint8_t * n1p, const uint8_t * n2p, uint8_t * dstp, int stride, int width, int height, int thresh);
+
+void absDiffAndMinMaskThresh_SSE2_simd(const uint8_t * srcp1, const uint8_t * srcp2, uint8_t * dstp, int stride, int width, int height, int thresh);
+void absDiffAndMinMaskThresh_c(const uint8_t * srcp1, const uint8_t * srcp2, uint8_t * dstp, int stride, int width, int height, int thresh);
+
+void absDiffAndMinMask_SSE2_simd(const uint8_t * srcp1, const uint8_t * srcp2, uint8_t * dstp, int stride, int width, int height);
+void absDiffAndMinMask_c(const uint8_t * srcp1, const uint8_t * srcp2, uint8_t * dstp, int stride, int width, int height);
+
+void checkAvgOscCorrelation_SSE2_simd(const uint8_t * s1p, const uint8_t * s2p, const uint8_t * s3p, const uint8_t * s4p, uint8_t * dstp, int stride, int width, int height, int thresh);
+void checkAvgOscCorrelation_c(const uint8_t * s1p, const uint8_t * s2p, const uint8_t * s3p, const uint8_t * s4p, uint8_t * dstp, int stride, int width, int height, int thresh);
+
+void VerticalBlur3_SSE2_simd(const uint8_t * srcp, uint8_t * dstp, int stride, int width, int height);
+void VerticalBlur3_c(const uint8_t* srcp, uint8_t* dstp, int stride, int width, int height);
+
+void HorizontalBlur3_SSE2_simd(const uint8_t * srcp, uint8_t * dstp, int stride, int width, int height);
+void HorizontalBlur3_c(const uint8_t* srcp, uint8_t* dstp, int stride, int width, int height);
+
+void HorizontalBlur6_SSE2_simd(const uint8_t* srcp, uint8_t* dstp, int stride, int width, int height);
+void HorizontalBlur6_c(const uint8_t * srcp, uint8_t * dstp, int stride, int width, int height);
+
+void andNeighborsInPlace_SSE2_simd(uint8_t * srcp, int stride, int width, int height);
+// no distinct C here
+

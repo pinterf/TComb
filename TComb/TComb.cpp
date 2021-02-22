@@ -30,7 +30,9 @@
 
 #include "TComb.h"
 #include <inttypes.h>
+#include <stdint.h>
 
+#ifdef OLD_ASM
 extern "C" void buildFinalMask_SSE2(const uint8_t * s1p, const uint8_t * s2p, const uint8_t * m1p, uint8_t * dstp, int stride, int width, int height, int thresh);
 extern "C" void andNeighborsInPlace_SSE2(uint8_t * srcp, int stride, int width, int height);
 extern "C" void absDiff_SSE2(const uint8_t * srcp1, const uint8_t * srcp2, uint8_t * dstp, int stride, int width, int height);
@@ -47,6 +49,7 @@ extern "C" void checkSceneChange_SSE2(const uint8_t * s1p, const uint8_t * s2p, 
 extern "C" void VerticalBlur3_SSE2(const uint8_t * srcp, uint8_t * dstp, int stride, int width, int height);
 extern "C" void HorizontalBlur3_SSE2(const uint8_t * srcp, uint8_t * dstp, int stride, int width, int height);
 extern "C" void HorizontalBlur6_SSE2(const uint8_t * srcp, uint8_t * dstp, int stride, int width, int height);
+#endif
 
 PVideoFrame __stdcall TComb::GetFrame(int n, IScriptEnvironment* env)
 {
@@ -393,6 +396,7 @@ void TComb::buildFinalMask(PlanarFrame* s1, PlanarFrame* s2, PlanarFrame* m1,
     uint8_t* dstp = dst->GetPtr(b);
     const int thresh = b == 0 ? othreshL : othreshC;
 
+#ifdef OLD_ASM
     if (cpu & CPUF_SSE2)
       buildFinalMask_SSE2(s1p, s2p, m1p, dstp, stride, width, height, thresh);
     else
@@ -413,6 +417,12 @@ void TComb::buildFinalMask(PlanarFrame* s1, PlanarFrame* s2, PlanarFrame* m1,
         dstp += stride;
       }
     }
+#else
+    if (cpu & CPUF_SSE2)
+      buildFinalMask_SSE2_simd(s1p, s2p, m1p, dstp, stride, width, height, thresh);
+    else
+      buildFinalMask_c(s1p, s2p, m1p, dstp, stride, width, height, thresh);
+#endif
   }
 }
 
@@ -427,6 +437,7 @@ void TComb::andNeighborsInPlace(PlanarFrame* src, int lc, IScriptEnvironment* en
   uint8_t* srcpp = srcp - stride;
   uint8_t* srcpn = srcp + stride;
 
+  // top
   srcp[0] &= (srcpn[0] | srcpn[1]);
   for (int x = 1; x < width - 1; ++x)
     srcp[x] &= (srcpn[x - 1] | srcpn[x] | srcpn[x + 1]);
@@ -436,20 +447,29 @@ void TComb::andNeighborsInPlace(PlanarFrame* src, int lc, IScriptEnvironment* en
   srcp += stride;
   srcpn += stride;
 
+  // middle
   if (cpu & CPUF_SSE2)
   {
     const int widtha = (width % 16) ? ((width >> 4) << 4) : width - 16;
 
+#ifdef OLD_ASM
     andNeighborsInPlace_SSE2(srcp + 16, stride, widtha - 16, height - 2);
+#else
+    andNeighborsInPlace_SSE2_simd(srcp + 16, stride, widtha - 16, height - 2);
+#endif
 
     for (int y = 1; y < height - 1; y++)
     {
+      // leftmost
       srcp[0] &= (srcpp[0] | srcpp[1] | srcpn[0] | srcpn[1]);
+      // next 15
       for (int x = 1; x < 16; x++)
         srcp[x] &= (srcpp[x - 1] | srcpp[x] | srcpp[x + 1] | srcpn[x - 1] | srcpn[x] | srcpn[x + 1]);
 
+      // right side non-mod16
       for (int x = widtha; x < width - 1; x++)
         srcp[x] &= (srcpp[x - 1] | srcpp[x] | srcpp[x + 1] | srcpn[x - 1] | srcpn[x] | srcpn[x + 1]);
+      // rightmost
       srcp[width - 1] &= (srcpp[width - 2] | srcpp[width - 1] | srcpn[width - 2] | srcpn[width - 1]);
 
       srcpp += stride;
@@ -472,6 +492,7 @@ void TComb::andNeighborsInPlace(PlanarFrame* src, int lc, IScriptEnvironment* en
     }
   }
 
+  // bottom
   srcp[0] &= (srcpp[0] | srcpp[1]);
   for (int x = 1; x < width - 1; ++x)
     srcp[x] &= (srcpp[x - 1] | srcpp[x] | srcpp[x + 1]);
@@ -497,6 +518,7 @@ void TComb::absDiff(PlanarFrame* src1, PlanarFrame* src2, PlanarFrame* dst, int 
   if (dst_pitch != stride)
     env->ThrowError("AbsDiff source and destination have difference pitches!");
 
+#ifdef OLD_ASM
   if (cpu & CPUF_SSE2)
     absDiff_SSE2(srcp1, srcp2, dstp, stride, width, height);
   else
@@ -511,6 +533,12 @@ void TComb::absDiff(PlanarFrame* src1, PlanarFrame* src2, PlanarFrame* dst, int 
       dstp += stride;
     }
   }
+#else
+  if (cpu & CPUF_SSE2)
+    absDiff_SSE2_simd(srcp1, srcp2, dstp, stride, width, height);
+  else
+    absDiff_c(srcp1, srcp2, dstp, stride, width, height);
+#endif
 }
 
 void TComb::absDiffAndMinMask(PlanarFrame* src1, PlanarFrame* src2, PlanarFrame* dst, int lc, IScriptEnvironment* env)
@@ -524,6 +552,7 @@ void TComb::absDiffAndMinMask(PlanarFrame* src1, PlanarFrame* src2, PlanarFrame*
   const int width = src1->GetWidth(0);
   const int stride = src1->GetPitch(0);
 
+#ifdef OLD_ASM
   if (cpu & CPUF_SSE2)
     absDiffAndMinMask_SSE2(srcp1, srcp2, dstp, stride, width, height);
   else
@@ -541,7 +570,12 @@ void TComb::absDiffAndMinMask(PlanarFrame* src1, PlanarFrame* src2, PlanarFrame*
       srcp2 += stride;
       dstp += stride;
     }
-  }
+#else
+  if (cpu & CPUF_SSE2)
+    absDiffAndMinMask_SSE2_simd(srcp1, srcp2, dstp, stride, width, height);
+  else
+    absDiffAndMinMask_c(srcp1, srcp2, dstp, stride, width, height);
+#endif
 }
 
 void TComb::absDiffAndMinMaskThresh(PlanarFrame* src1, PlanarFrame* src2, PlanarFrame* dst,
@@ -557,6 +591,7 @@ void TComb::absDiffAndMinMaskThresh(PlanarFrame* src1, PlanarFrame* src2, Planar
   const int stride = src1->GetPitch(0);
   const int thresh = fthreshL;
 
+#ifdef OLD_ASM
   if (cpu & CPUF_SSE2)
     absDiffAndMinMaskThresh_SSE2(srcp1, srcp2, dstp, stride, width, height, thresh);
   else
@@ -579,6 +614,12 @@ void TComb::absDiffAndMinMaskThresh(PlanarFrame* src1, PlanarFrame* src2, Planar
       dstp += stride;
     }
   }
+#else
+  if (cpu & CPUF_SSE2)
+    absDiffAndMinMaskThresh_SSE2_simd(srcp1, srcp2, dstp, stride, width, height, thresh);
+  else
+    absDiffAndMinMaskThresh_c(srcp1, srcp2, dstp, stride, width, height, thresh);
+#endif
 }
 
 void TComb::copyPad(PlanarFrame* src, PlanarFrame* dst, int lc, IScriptEnvironment* env)
@@ -637,6 +678,7 @@ void TComb::MinMax(PlanarFrame* src, PlanarFrame* dmin, PlanarFrame* dmax, int l
     uint8_t* dmaxp = dmax->GetPtr(b);
     const int thresh = b == 0 ? 2 : 8;
 
+#ifdef OLD_ASM
     if (cpu & CPUF_SSE2)
       MinMax_SSE2(srcp, dminp, dmaxp, src_stride, min_stride, width, height, thresh);
     else
@@ -665,6 +707,12 @@ void TComb::MinMax(PlanarFrame* src, PlanarFrame* dmin, PlanarFrame* dmax, int l
         dmaxp += min_stride;
       }
     }
+#else
+    if (cpu & CPUF_SSE2)
+      MinMax_SSE2_simd(srcp, dminp, dmaxp, src_stride, min_stride, width, height, thresh);
+    else
+      MinMax_c(srcp, dminp, dmaxp, src_stride, min_stride, width, height, thresh);
+#endif
   }
 }
 
@@ -688,6 +736,7 @@ void TComb::checkOscillation5(PlanarFrame* p2, PlanarFrame* p1, PlanarFrame* s1,
     uint8_t* dstp = dst->GetPtr(b);
     const int thresh = b == 0 ? othreshL : othreshC;
 
+#ifdef OLD_ASM
     if (cpu & CPUF_SSE2)
       checkOscillation5_SSE2(p2p, p1p, s1p, n1p, n2p, dstp, stride, width, height, thresh);
     else
@@ -700,7 +749,7 @@ void TComb::checkOscillation5(PlanarFrame* p2, PlanarFrame* p1, PlanarFrame* s1,
           const int max31 = max3(p2p[x], s1p[x], n2p[x]);
           const int min22 = min(p1p[x], n1p[x]);
           const int max22 = max(p1p[x], n1p[x]);
-          if (((min31 > max22) || max22 == 0 || (max31 < min22) || max31 == 0) &&
+          if (((max22 < min31) ||  max22 == 0 || (max31 < min22) || max31 == 0) &&
             max31 - min31 < thresh && max22 - min22 < thresh)
             dstp[x] = 0xFF;
           else dstp[x] = 0;
@@ -714,6 +763,12 @@ void TComb::checkOscillation5(PlanarFrame* p2, PlanarFrame* p1, PlanarFrame* s1,
         dstp += stride;
       }
     }
+#else
+    if (cpu & CPUF_SSE2)
+      checkOscillation5_SSE2_simd(p2p, p1p, s1p, n1p, n2p, dstp, stride, width, height, thresh);
+    else
+      checkOscillation5_c(p2p, p1p, s1p, n1p, n2p, dstp, stride, width, height, thresh);
+#endif
   }
 }
 
@@ -733,6 +788,7 @@ void TComb::calcAverages(PlanarFrame* s1, PlanarFrame* s2, PlanarFrame* dst, int
     const uint8_t* s2p = s2->GetPtr(b);
     uint8_t* dstp = dst->GetPtr(b);
 
+#ifdef OLD_ASM
     if (cpu & CPUF_SSE2)
       calcAverages_SSE2(s1p, s2p, dstp, stride, width, height);
     else
@@ -747,6 +803,12 @@ void TComb::calcAverages(PlanarFrame* s1, PlanarFrame* s2, PlanarFrame* dst, int
         dstp += stride;
       }
     }
+#else
+    if (cpu & CPUF_SSE2)
+      calcAverages_SSE2_simd(s1p, s2p, dstp, stride, width, height);
+    else
+      calcAverages_c(s1p, s2p, dstp, stride, width, height);
+#endif
   }
 }
 
@@ -769,6 +831,7 @@ void TComb::checkAvgOscCorrelation(PlanarFrame* s1, PlanarFrame* s2, PlanarFrame
     uint8_t* dstp = dst->GetPtr(b);
     const int thresh = b == 0 ? fthreshL : fthreshC;
 
+#ifdef OLD_ASM
     if (cpu & CPUF_SSE2)
       checkAvgOscCorrelation_SSE2(s1p, s2p, s3p, s4p, dstp, stride, width, height, thresh);
     else
@@ -789,6 +852,12 @@ void TComb::checkAvgOscCorrelation(PlanarFrame* s1, PlanarFrame* s2, PlanarFrame
         dstp += stride;
       }
     }
+#else
+    if (cpu & CPUF_SSE2)
+      checkAvgOscCorrelation_SSE2_simd(s1p, s2p, s3p, s4p, dstp, stride, width, height, thresh);
+    else
+      checkAvgOscCorrelation_c(s1p, s2p, s3p, s4p, dstp, stride, width, height, thresh);
+#endif
   }
 }
 
@@ -809,6 +878,7 @@ void TComb::or3Masks(PlanarFrame* s1, PlanarFrame* s2, PlanarFrame* s3,
     const uint8_t* s3p = s3->GetPtr(b);
     uint8_t* dstp = dst->GetPtr(b);
 
+#ifdef OLD_ASM
     if (cpu & CPUF_SSE2)
       or3Masks_SSE2(s1p, s2p, s3p, dstp, stride, width, height);
     else
@@ -824,6 +894,12 @@ void TComb::or3Masks(PlanarFrame* s1, PlanarFrame* s2, PlanarFrame* s3,
         dstp += stride;
       }
     }
+#else
+    if (cpu & CPUF_SSE2)
+      or3Masks_SSE2_simd(s1p, s2p, s3p, dstp, stride, width, height);
+    else
+      or3Masks_c(s1p, s2p, s3p, dstp, stride, width, height);
+#endif
   }
 }
 
@@ -843,6 +919,7 @@ void TComb::orAndMasks(PlanarFrame* s1, PlanarFrame* s2, PlanarFrame* dst, int l
     const uint8_t* s2p = s2->GetPtr(b);
     uint8_t* dstp = dst->GetPtr(b);
 
+#ifdef OLD_ASM
     if (cpu & CPUF_SSE2)
       orAndMasks_SSE2(s1p, s2p, dstp, stride, width, height);
     else
@@ -857,6 +934,12 @@ void TComb::orAndMasks(PlanarFrame* s1, PlanarFrame* s2, PlanarFrame* dst, int l
         dstp += stride;
       }
     }
+#else
+    if (cpu & CPUF_SSE2)
+      orAndMasks_SSE2_simd(s1p, s2p, dstp, stride, width, height);
+    else
+      orAndMasks_c(s1p, s2p, dstp, stride, width, height);
+#endif
   }
 }
 
@@ -876,6 +959,7 @@ void TComb::andMasks(PlanarFrame* s1, PlanarFrame* s2, PlanarFrame* dst, int lc,
     const uint8_t* s2p = s2->GetPtr(b);
     uint8_t* dstp = dst->GetPtr(b);
 
+#ifdef OLD_ASM
     if (cpu & CPUF_SSE2)
       andMasks_SSE2(s1p, s2p, dstp, stride, width, height);
     else
@@ -889,9 +973,17 @@ void TComb::andMasks(PlanarFrame* s1, PlanarFrame* s2, PlanarFrame* dst, int lc,
         s2p += stride;
         dstp += stride;
       }
-    }
+  }
+#else
+    if (cpu & CPUF_SSE2)
+      andMasks_SSE2_simd(s1p, s2p, dstp, stride, width, height);
+    else
+      andMasks_c(s1p, s2p, dstp, stride, width, height);
+#endif
   }
 }
+
+
 
 bool TComb::checkSceneChange(PlanarFrame* s1, PlanarFrame* s2, int n, IScriptEnvironment* env)
 {
@@ -913,10 +1005,13 @@ bool TComb::checkSceneChange(PlanarFrame* s1, PlanarFrame* s2, int n, IScriptEnv
   // !! this mod16 must match with the default diffmaxsc initialization!
   const int width = (s1->GetWidth(0) >> 4) << 4;
   const int stride = s1->GetPitch(0);
-  int64_t diff = 0;
+  const int stride2 = s2->GetPitch(0);
 
-  if (cpu & CPUF_SSE2)
+#ifdef OLD_ASM
+  int64_t diff = 0;
+  if (cpu & CPUF_SSE2) {
     checkSceneChange_SSE2(s1p, s2p, stride, width, height, &diff);
+  }
   else
   {
     for (int y = 0; y < height; ++y)
@@ -933,7 +1028,13 @@ bool TComb::checkSceneChange(PlanarFrame* s1, PlanarFrame* s2, int n, IScriptEnv
       s2p += stride;
     }
   }
-
+#else
+  uint64_t diff = 0;
+  if (cpu & CPUF_SSE2)
+    checkSceneChangePlanar_1_SSE2_simd(s1p, s2p, height, width, stride, stride2, diff);
+  else
+    checkSceneChangePlanar_1_c<uint8_t>(s1p, s2p, height, width, stride, stride2, diff);
+#endif
   if (diff > diffmaxsc)
   {
     if (debug)
@@ -964,6 +1065,7 @@ void TComb::VerticalBlur3(PlanarFrame* src, PlanarFrame* dst, int lc, IScriptEnv
   const int width = src->GetWidth(0);
   const int height = src->GetHeight(0);
 
+#ifdef OLD_ASM
   if (cpu & CPUF_SSE2)
     VerticalBlur3_SSE2(srcp, dstp, stride, width, height);
   else
@@ -993,6 +1095,12 @@ void TComb::VerticalBlur3(PlanarFrame* src, PlanarFrame* dst, int lc, IScriptEnv
     for (int x = 0; x < width; ++x)
       dstp[x] = (srcpp[x] + srcp[x] + 1) >> 1;
   }
+#else
+  if (cpu & CPUF_SSE2)
+    VerticalBlur3_SSE2_simd(srcp, dstp, stride, width, height);
+  else
+    VerticalBlur3_c(srcp, dstp, stride, width, height);
+#endif
 }
 
 void TComb::HorizontalBlur3(PlanarFrame* src, PlanarFrame* dst, int lc, IScriptEnvironment* env)
@@ -1005,6 +1113,7 @@ void TComb::HorizontalBlur3(PlanarFrame* src, PlanarFrame* dst, int lc, IScriptE
   const int width = src->GetWidth(0);
   const int height = src->GetHeight(0);
 
+#ifdef OLD_ASM
   if ((cpu & CPUF_SSE2) && width >= 16)
   {
     const int widtha = (width >> 4) << 4;
@@ -1042,6 +1151,34 @@ void TComb::HorizontalBlur3(PlanarFrame* src, PlanarFrame* dst, int lc, IScriptE
       dstp += stride;
     }
   }
+#else
+  if ((cpu & CPUF_SSE2) && width >= 16) // fixme: >= 32?
+  {
+    const int widtha = (width >> 4) << 4;
+
+    HorizontalBlur3_SSE2_simd(srcp + 16, dstp + 16, stride, widtha - 32, height);
+
+    for (int y = 0; y < height; y++)
+    {
+      dstp[0] = (srcp[0] + srcp[1] + 1) >> 1;
+
+      for (int x = 1; x < 16; x++)
+        dstp[x] = (srcp[x - 1] + (srcp[x] << 1) + srcp[x + 1] + 2) >> 2;
+
+      for (int x = widtha - 16; x < width - 1; x++)
+        dstp[x] = (srcp[x - 1] + (srcp[x] << 1) + srcp[x + 1] + 2) >> 2;
+
+      dstp[width - 1] = (srcp[width - 2] + srcp[width - 1] + 1) >> 1;
+
+      srcp += stride;
+      dstp += stride;
+    }
+  }
+  else
+  {
+    HorizontalBlur3_c(srcp, dstp, stride, width, height);
+  }
+#endif
 }
 
 void TComb::HorizontalBlur6(PlanarFrame* src, PlanarFrame* dst, int lc, IScriptEnvironment* env)
@@ -1054,6 +1191,7 @@ void TComb::HorizontalBlur6(PlanarFrame* src, PlanarFrame* dst, int lc, IScriptE
   const int width = src->GetWidth(0);
   const int height = src->GetHeight(0);
 
+#ifdef OLD_ASM
   if ((cpu & CPUF_SSE2) && width >= 16)
   {
     const int widtha = (width >> 4) << 4;
@@ -1095,6 +1233,37 @@ void TComb::HorizontalBlur6(PlanarFrame* src, PlanarFrame* dst, int lc, IScriptE
       dstp += stride;
     }
   }
+#else
+  if ((cpu & CPUF_SSE2) && width >= 16) // fixme: >= 32?
+  {
+    const int widtha = (width >> 4) << 4;
+
+    HorizontalBlur6_SSE2_simd(srcp + 16, dstp + 16, stride, widtha - 32, height);
+
+    for (int y = 0; y < height; y++)
+    {
+      dstp[0] = (srcp[0] * 6 + (srcp[1] << 3) + (srcp[2] << 1) + 8) >> 4;
+      dstp[1] = (((srcp[0] + srcp[2]) << 2) + srcp[1] * 6 + (srcp[3] << 1) + 8) >> 4;
+
+      for (int x = 2; x < 16; x++)
+        dstp[x] = (srcp[x - 2] + ((srcp[x - 1] + srcp[x + 1]) << 2) + srcp[x] * 6 + srcp[x + 2] + 8) >> 4;
+
+      for (int x = widtha - 16; x < width - 2; x++)
+        dstp[x] = (srcp[x - 2] + ((srcp[x - 1] + srcp[x + 1]) << 2) + srcp[x] * 6 + srcp[x + 2] + 8) >> 4;
+
+      dstp[width - 2] = ((srcp[width - 4] << 1) + ((srcp[width - 3] + srcp[width - 1]) << 2) + srcp[width - 2] * 6 + 8) >> 4;
+      dstp[width - 1] = ((srcp[width - 3] << 1) + (srcp[width - 2] << 3) + srcp[width - 1] * 6 + 8) >> 4;
+
+      srcp += stride;
+      dstp += stride;
+    }
+  }
+  else
+  {
+    HorizontalBlur6_c(srcp, dstp, stride, width, height);
+  }
+
+#endif
 }
 
 void TComb::getStartStop(int lc, int& start, int& stop)
