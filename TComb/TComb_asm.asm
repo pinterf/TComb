@@ -325,16 +325,21 @@ xloop:
 	pmaxub xmm3,[edi+ecx]
 	pminub xmm0,[esi+ecx]
 	pmaxub xmm1,[esi+ecx]
+
 	movdqa xmm4,xmm3
 	movdqa xmm5,xmm1
 	psubusb xmm4,xmm2
 	psubusb xmm5,xmm0
+	; minus (thresh-1)
 	psubusb xmm4,xmm7
 	psubusb xmm5,xmm7
+	; minus 1
 	psubusb xmm2,oword ptr onesByte
 	psubusb xmm0,oword ptr onesByte
+
 	psubusb xmm1,xmm2
 	psubusb xmm3,xmm0
+
 	pcmpeqb xmm1,xmm6
 	pcmpeqb xmm3,xmm6
 	pcmpeqb xmm4,xmm6

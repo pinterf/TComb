@@ -485,11 +485,11 @@ checkOscillation5_SSE2 proc public frame
 .savexmm128 xmm9,48
 .endprolog
 	
-	mov rax,rcx
-	mov rbx,rdx
-	mov rdx,r8
-	mov rdi,r9
-	mov rsi,n2p
+	mov rax,rcx ; p2p
+	mov rbx,rdx ; p1p
+	mov rdx,r8 ; s1p
+	mov rdi,r9 ; n1p
+	mov rsi,n2p ; n2p
 	mov r8,dstp
 	movsxd r9,stride
 	mov r10d,width_
@@ -498,6 +498,9 @@ checkOscillation5_SSE2 proc public frame
 	
 	pxor xmm6,xmm6
 	
+	; trick:
+	; x<thresh ==> x<=(thresh-1) ==> x-(thresh-1)<=0 ==> sub_sat(x,thresh-1)==0
+	; pcmpeqb(psubusb(x,thresh-1),zero): 0xFF where x<thresh
 	dec thresh
 	movd xmm7,thresh
 	punpcklbw xmm7,xmm7
@@ -505,6 +508,7 @@ checkOscillation5_SSE2 proc public frame
 	punpckldq xmm7,xmm7
 	punpcklqdq xmm7,xmm7
 	
+  ; all 01 (onesByte)
 	pcmpeqb xmm9,xmm9
 	psrlw xmm9,15
 	movdqa xmm8,xmm9
@@ -514,29 +518,45 @@ checkOscillation5_SSE2 proc public frame
 yloop:
 	xor rcx,rcx
 xloop:
-	movdqa xmm0,[rax+rcx]
-	movdqa xmm2,[rbx+rcx]
+
+; const int min31 = min3(p2p[x], s1p[x], n2p[x]);
+; const int max31 = max3(p2p[x], s1p[x], n2p[x]);
+; const int min22 = min(p1p[x], n1p[x]);
+; const int max22 = max(p1p[x], n1p[x]);
+
+	movdqa xmm0,[rax+rcx] ; p2p
+	movdqa xmm2,[rbx+rcx] ; p1p
 	movdqa xmm1,xmm0
 	movdqa xmm3,xmm2
-	movdqa xmm8,[rdx+rcx]
-	pminub xmm0,xmm8
-	pmaxub xmm1,xmm8
-	movdqa xmm8,[rdi+rcx]
-	pminub xmm2,xmm8
-	pmaxub xmm3,xmm8
-	movdqa xmm8,[rsi+rcx]
-	pminub xmm0,xmm8
-	pmaxub xmm1,xmm8
-	movdqa xmm4,xmm3
-	movdqa xmm5,xmm1
-	psubusb xmm4,xmm2
-	psubusb xmm5,xmm0
-	psubusb xmm4,xmm7
-	psubusb xmm5,xmm7
-	psubusb xmm2,xmm9
-	psubusb xmm0,xmm9
-	psubusb xmm1,xmm2
-	psubusb xmm3,xmm0
+	movdqa xmm8,[rdx+rcx] ; s1p
+	pminub xmm0,xmm8 ; min(p2p, s1p)
+	pmaxub xmm1,xmm8 ; max(p2p, s1p)
+	movdqa xmm8,[rdi+rcx] ; n1p
+	pminub xmm2,xmm8 ; min22 = min(p1p, n1p)
+	pmaxub xmm3,xmm8 ; max22 = max(p1p, n1p)
+	movdqa xmm8,[rsi+rcx] ; n2p
+	pminub xmm0,xmm8 ; min31 = min(p2p, s1p, n2p)
+	pmaxub xmm1,xmm8 ; max31 = max(p2p, s1p, n2p)
+
+; if (((min31 > max22) || max22 == 0 || (max31 < min22) || max31 == 0) &&
+;   max31 - min31 < thresh && max22 - min22 < thresh)
+; No check for (max22 == 0) or (max31 == 0), like in C, sub_sat handles automatically
+
+	movdqa xmm4,xmm3 ; max22
+	movdqa xmm5,xmm1 ; max31
+	psubusb xmm4,xmm2 ; max22-min22
+	psubusb xmm5,xmm0 ; max31-min31
+  ; minus (thresh-1)
+	psubusb xmm4,xmm7 ; max22-min22 - (thresh-1)
+	psubusb xmm5,xmm7 ; max31-min31 - (thresh-1)
+
+	; minus 1
+	psubusb xmm2,xmm9 ; min22-1
+	psubusb xmm0,xmm9 ; min31-1
+
+	psubusb xmm1,xmm2 ; max31 - (min22-1)
+	psubusb xmm3,xmm0 ; max22 - (min31-1)
+
 	pcmpeqb xmm1,xmm6
 	pcmpeqb xmm3,xmm6
 	pcmpeqb xmm4,xmm6
