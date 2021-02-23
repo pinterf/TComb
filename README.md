@@ -22,7 +22,7 @@ In 2015 many changes were made when updating TComb in order to improve speed (se
 * Removed/changed "opt" parameter
 
 In 2021 came a general bugfix release by pinterf.
-TO-DO: linux port, external assembler to SIMD intrinsics.
+Added linux port, external assembler was rewritten in SIMD intrinsics.
 
 ### Programmer Notes
 
