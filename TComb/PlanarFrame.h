@@ -43,6 +43,8 @@ private:
   int ypitch, uvpitch;
   int ywidth, uvwidth;
   int yheight, uvheight;
+  bool debug = false;
+  int debug_padding = 0;
   uint8_t *y, *u, *v;
   bool allocSpace(VideoInfo &viInfo);
   bool allocSpace(int specs[4]);
@@ -87,6 +89,8 @@ public:
   int GetPitch(int plane = 0);
   void BitBlt(uint8_t* dstp, int dst_pitch, const uint8_t* srcp,
     int src_pitch, int row_size, int height);
+  int CheckMemory();
+  void FillMemDebug();
   PlanarFrame& operator=(PlanarFrame &ob2);
 };
 

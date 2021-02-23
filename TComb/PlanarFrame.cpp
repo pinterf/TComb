@@ -29,6 +29,7 @@
 #include <emmintrin.h>
 #endif
 
+// 8 bits only!!!
 
 PlanarFrame::PlanarFrame(int cpuFlags)
 {
@@ -67,14 +68,28 @@ PlanarFrame::PlanarFrame(VideoInfo &viInfo, bool _packed, int cpuFlags)
 
 PlanarFrame::~PlanarFrame()
 {
-  if (y != NULL) { _aligned_free(y); y = NULL; }
+  if (y != NULL) { _aligned_free(y - debug_padding); y = NULL; }
   if (u != NULL) { _aligned_free(u); u = NULL; }
   if (v != NULL) { _aligned_free(v); v = NULL; }
 }
 
+void PlanarFrame::FillMemDebug()
+{
+  if (!debug) return;
+  // MIN_ALIGNMENT bytes before
+  uint32_t* pInt = (uint32_t*)(y);
+  for (int i = 0; i < MIN_ALIGNMENT / sizeof(uint32_t); i++)
+    pInt[i] = 0xDEADBEEF;
+  // MIN_ALIGNMENT bytes after
+  pInt = (uint32_t*)(y + MIN_ALIGNMENT + ypitch * yheight);
+  for (int i = 0; i < MIN_ALIGNMENT / sizeof(uint32_t); i++)
+    pInt[i] = 0xDEADBEEF;
+  y = y + MIN_ALIGNMENT; // our real pointer after guard area
+}
+
 bool PlanarFrame::allocSpace(VideoInfo &viInfo)
 {
-  if (y != NULL) { _aligned_free(y); y = NULL; }
+  if (y != NULL) { _aligned_free(y - debug_padding); y = NULL; }
   if (u != NULL) { _aligned_free(u); u = NULL; }
   if (v != NULL) { _aligned_free(v); v = NULL; }
   int height = viInfo.height;
@@ -84,8 +99,11 @@ bool PlanarFrame::allocSpace(VideoInfo &viInfo)
     ypitch = width + ((width%MIN_ALIGNMENT) == 0 ? 0 : MIN_ALIGNMENT - (width%MIN_ALIGNMENT));
     ywidth = width;
     yheight = height;
-    y = (uint8_t*)_aligned_malloc(ypitch * yheight, MIN_ALIGNMENT);
+
+    debug_padding = debug ? MIN_ALIGNMENT : 0;
+    y = (uint8_t*)_aligned_malloc(ypitch * yheight + 2 * debug_padding, MIN_ALIGNMENT);
     if (y == NULL) return false;
+    FillMemDebug();
 
     if (!viInfo.IsY()) {
       width >>= viInfo.GetPlaneWidthSubsampling(PLANAR_U);
@@ -102,6 +120,8 @@ bool PlanarFrame::allocSpace(VideoInfo &viInfo)
   }
   else if (viInfo.IsYUY2())
   {
+    debug_padding = 0;
+
     if (!packed)
     {
       ypitch = width + ((width%MIN_ALIGNMENT) == 0 ? 0 : MIN_ALIGNMENT - (width%MIN_ALIGNMENT));
@@ -137,7 +157,7 @@ bool PlanarFrame::allocSpace(VideoInfo &viInfo)
 
 bool PlanarFrame::allocSpace(int specs[4])
 {
-  if (y != NULL) { _aligned_free(y); y = NULL; }
+  if (y != NULL) { _aligned_free(y - debug_padding); y = NULL; }
   if (u != NULL) { _aligned_free(u); u = NULL; }
   if (v != NULL) { _aligned_free(v); v = NULL; }
   int height = specs[0];
@@ -151,8 +171,11 @@ bool PlanarFrame::allocSpace(int specs[4])
   uvwidth = width;
   uvheight = height;
 
-  y = (uint8_t*)_aligned_malloc(ypitch*yheight, MIN_ALIGNMENT);
+  const int debugpadding = debug ? MIN_ALIGNMENT : 0;
+  y = (uint8_t*)_aligned_malloc(ypitch * yheight + 2 * debugpadding, MIN_ALIGNMENT);
   if (y == NULL) return false;
+  FillMemDebug();
+
   if (uvpitch) {
     u = (uint8_t*)_aligned_malloc(uvpitch * uvheight, MIN_ALIGNMENT);
     if (u == NULL) return false;
@@ -276,7 +299,7 @@ int PlanarFrame::GetPitch(int plane)
 
 void PlanarFrame::freePlanar()
 {
-  if (y != NULL) { _aligned_free(y); y = NULL; }
+  if (y != NULL) { _aligned_free(y - debug_padding); y = NULL; }
   if (u != NULL) { _aligned_free(u); u = NULL; }
   if (v != NULL) { _aligned_free(v); v = NULL; }
   ypitch = uvpitch = 0;
@@ -548,5 +571,17 @@ void PlanarFrame::BitBlt(uint8_t* dstp, int dst_pitch, const uint8_t* srcp,
       srcp += src_pitch;
     }
   }
+}
+
+int PlanarFrame::CheckMemory() 
+{
+  if (!debug) return 0;
+  if (!y) return 0;
+    // check buffer overrun
+  uint32_t* pInt = (uint32_t*)(y - MIN_ALIGNMENT);
+  for (int i = 0; i < MIN_ALIGNMENT / sizeof(uint32_t); i++)
+    if (pInt[i] != 0xDEADBEEF) 
+      return 1;
+  return 0;
 }
 
