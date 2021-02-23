@@ -30,3 +30,46 @@ This program was compiled using Visual Studio 2019 and falls under the GNU Gener
 
 I (Elegant) would like to thank jpsdr and dubhater for their work on nnedi3 and the VapourSynth version of TComb (respectively). Their work led to the port of this project.
 I'd also like to thank the masm32 community who were very helpful as I explored assembly.
+
+Build instructions
+==================
+VS2019: 
+  use IDE
+
+Windows GCC (mingw installed by msys2):
+  from the 'build' folder under project root:
+
+  del ..\CMakeCache.txt
+  cmake .. -G "MinGW Makefiles" -DENABLE_INTEL_SIMD:bool=on
+  @rem test: cmake .. -G "MinGW Makefiles" -DENABLE_INTEL_SIMD:bool=off
+  cmake --build . --config Release  
+
+Linux
+  from the 'build' folder under project root:
+  ENABLE_INTEL_SIMD is automatically off for non x86 arhitectures
+  
+* Clone repo and build
+    
+        git clone https://github.com/pinterf/TComb
+        cd TComb
+        cmake -B build -S .
+        cmake --build build
+
+  Useful hints:        
+   build after clean:
+        cmake --build build --clean-first
+
+   Force no asm support
+        cmake -B build -S . -DENABLE_INTEL_SIMD:bool=off
+   delete cmake cache
+        rm build/CMakeCache.txt
+
+* Find binaries at
+    
+        build/TComb/libtcomb.so
+
+* Install binaries
+
+        cd build
+        sudo make install
+  
