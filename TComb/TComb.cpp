@@ -29,12 +29,14 @@
 */
 
 #ifdef _WIN32
+#define NOMINMAX
 #include "windows.h"
 #endif
 #include "TComb.h"
 #include <inttypes.h>
 #include <stdint.h>
 #include <cstring>
+#include <algorithm>
 
 #ifdef OLD_ASM
 extern "C" void buildFinalMask_SSE2(const uint8_t * s1p, const uint8_t * s2p, const uint8_t * m1p, uint8_t * dstp, int stride, int width, int height, int thresh);
@@ -580,6 +582,7 @@ void TComb::absDiffAndMinMask(PlanarFrame* src1, PlanarFrame* src2, PlanarFrame*
       srcp2 += stride;
       dstp += stride;
     }
+  }
 #else
 #ifdef INTEL_INTRINSICS
   if (cpu & CPUF_SSE2)
