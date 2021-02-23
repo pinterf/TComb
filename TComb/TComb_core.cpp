@@ -284,14 +284,14 @@ void MinMax_c(const uint8_t* srcp, uint8_t* dstpMin, uint8_t* dstpMax, int src_s
   {
     for (int x = 0; x < width; ++x)
     {
-      dstpMin[x] = max(min(min(min(min(srcpp[x - 1], srcpp[x]),
-        min(srcpp[x + 1], srcp[x - 1])),
-        min(min(srcp[x], srcp[x + 1]),
-          min(srcpn[x - 1], srcpn[x]))), srcpn[x + 1]) - thresh, 0);
-      dstpMax[x] = min(max(max(max(max(srcpp[x - 1], srcpp[x]),
-        max(srcpp[x + 1], srcp[x - 1])),
-        max(max(srcp[x], srcp[x + 1]),
-          max(srcpn[x - 1], srcpn[x]))), srcpn[x + 1]) + thresh, 255);
+      dstpMin[x] = std::max(std::min(std::min(std::min(std::min(srcpp[x - 1], srcpp[x]),
+        std::min(srcpp[x + 1], srcp[x - 1])),
+        std::min(std::min(srcp[x], srcp[x + 1]),
+          std::min(srcpn[x - 1], srcpn[x]))), srcpn[x + 1]) - thresh, 0);
+      dstpMax[x] = std::min(std::max(std::max(std::max(std::max(srcpp[x - 1], srcpp[x]),
+        std::max(srcpp[x + 1], srcp[x - 1])),
+        std::max(std::max(srcp[x], srcp[x + 1]),
+          std::max(srcpn[x - 1], srcpn[x]))), srcpn[x + 1]) + thresh, 255);
     }
 
     srcpp += src_stride;
@@ -390,7 +390,7 @@ void buildFinalMask_c(const uint8_t* s1p, const uint8_t* s2p, const uint8_t* m1p
 
 void checkOscillation5_SSE2_simd(const uint8_t* p2p, const uint8_t* p1p, const uint8_t* s1p, const uint8_t* n1p, const uint8_t* n2p, uint8_t* dstp, int stride, int width, int height, int thresh)
 {
-  int threshm1 = min(max(thresh - 1, 0), 255);
+  int threshm1 = std::min(std::max(thresh - 1, 0), 255);
   auto thresh_minus1 = _mm_set1_epi8(threshm1);
   auto one = _mm_set1_epi8(1);
   auto zero = _mm_setzero_si128();
@@ -449,8 +449,8 @@ void checkOscillation5_c(const uint8_t* p2p, const uint8_t* p1p, const uint8_t* 
     {
       const int min31 = min3(p2p[x], s1p[x], n2p[x]);
       const int max31 = max3(p2p[x], s1p[x], n2p[x]);
-      const int min22 = min(p1p[x], n1p[x]);
-      const int max22 = max(p1p[x], n1p[x]);
+      const int min22 = std::min(p1p[x], n1p[x]);
+      const int max22 = std::max(p1p[x], n1p[x]);
       if (((max22 < min31) || max22 == 0 || (max31 < min22) || max31 == 0) &&
         max31 - min31 < thresh && max22 - min22 < thresh)
         dstp[x] = 0xFF;
@@ -468,7 +468,7 @@ void checkOscillation5_c(const uint8_t* p2p, const uint8_t* p1p, const uint8_t* 
 
 void absDiffAndMinMaskThresh_SSE2_simd(const uint8_t* srcp1, const uint8_t* srcp2, uint8_t* dstp, int stride, int width, int height, int thresh)
 {
-  int threshm1 = min(max(thresh - 1, 0), 255);
+  int threshm1 = std::min(std::max(thresh - 1, 0), 255);
   auto thresh_minus1 = _mm_set1_epi8(threshm1);
   auto zero = _mm_setzero_si128();
 
@@ -572,7 +572,7 @@ void absDiffAndMinMask_c(const uint8_t* srcp1, const uint8_t* srcp2, uint8_t* ds
 
 void checkAvgOscCorrelation_SSE2_simd(const uint8_t* s1p, const uint8_t* s2p, const uint8_t* s3p, const uint8_t* s4p, uint8_t* dstp, int stride, int width, int height, int thresh)
 {
-  int threshm1 = min(max(thresh - 1, 0), 255);
+  int threshm1 = std::min(std::max(thresh - 1, 0), 255);
   auto thresh_minus1 = _mm_set1_epi8(threshm1);
   auto zero = _mm_setzero_si128();
 

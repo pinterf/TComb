@@ -28,20 +28,20 @@
 **   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#include <windows.h>
+#include "avisynth.h"
+#include "common.h"
 #include <stdint.h>
 #include <stdio.h>
-#include "avisynth.h"
 #include "PlanarFrame.h"
 
 #define VERSION "v2.1"
 
 //#define OLD_ASM
 
-#define min3(a,b,c) min(min(a,b),c)
-#define max3(a,b,c) max(max(a,b),c)
-#define min4(a,b,c,d) min(min(a,b),min(c,d))
-#define max4(a,b,c,d) max(max(a,b),max(c,d))
+#define min3(a,b,c) std::min(std::min(a,b),c)
+#define max3(a,b,c) std::max(std::max(a,b),c)
+#define min4(a,b,c,d) std::min(std::min(a,b),std::min(c,d))
+#define max4(a,b,c,d) std::max(std::max(a,b),std::max(c,d))
 
 class TCombFrame
 {

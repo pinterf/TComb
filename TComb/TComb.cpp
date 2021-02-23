@@ -28,9 +28,13 @@
 **   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+#ifdef _WIN32
+#include "windows.h"
+#endif
 #include "TComb.h"
 #include <inttypes.h>
 #include <stdint.h>
+#include <cstring>
 
 #ifdef OLD_ASM
 extern "C" void buildFinalMask_SSE2(const uint8_t * s1p, const uint8_t * s2p, const uint8_t * m1p, uint8_t * dstp, int stride, int width, int height, int thresh);
@@ -244,7 +248,7 @@ TComb::TComb(PClip _child, int _mode, int _fthreshL, int _fthreshC, int _othresh
 
   if (debug)
   {
-    sprintf_s(buf, "TComb %s by tritical\n", VERSION);
+    snprintf(buf, sizeof(buf), "TComb %s by tritical\n", VERSION);
     OutputDebugString(buf);
   }
 }
@@ -690,14 +694,14 @@ void TComb::MinMax(PlanarFrame* src, PlanarFrame* dmin, PlanarFrame* dmax, int l
       {
         for (int x = 0; x < width; ++x)
         {
-          dminp[x] = max(min(min(min(min(srcpp[x - 1], srcpp[x]),
-            min(srcpp[x + 1], srcp[x - 1])),
-            min(min(srcp[x], srcp[x + 1]),
-              min(srcpn[x - 1], srcpn[x]))), srcpn[x + 1]) - thresh, 0);
-          dmaxp[x] = min(max(max(max(max(srcpp[x - 1], srcpp[x]),
-            max(srcpp[x + 1], srcp[x - 1])),
-            max(max(srcp[x], srcp[x + 1]),
-              max(srcpn[x - 1], srcpn[x]))), srcpn[x + 1]) + thresh, 255);
+          dminp[x] = std::max(std::min(std::min(std::min(std::min(srcpp[x - 1], srcpp[x]),
+            std::min(srcpp[x + 1], srcp[x - 1])),
+            std::min(std::min(srcp[x], srcp[x + 1]),
+              std::min(srcpn[x - 1], srcpn[x]))), srcpn[x + 1]) - thresh, 0);
+          dmaxp[x] = std::min(std::max(std::max(std::max(std::max(srcpp[x - 1], srcpp[x]),
+            std::max(srcpp[x + 1], srcp[x - 1])),
+            std::max(std::max(srcp[x], srcp[x + 1]),
+              std::max(srcpn[x - 1], srcpn[x]))), srcpn[x + 1]) + thresh, 255);
         }
 
         srcpp += src_stride;
@@ -747,8 +751,8 @@ void TComb::checkOscillation5(PlanarFrame* p2, PlanarFrame* p1, PlanarFrame* s1,
         {
           const int min31 = min3(p2p[x], s1p[x], n2p[x]);
           const int max31 = max3(p2p[x], s1p[x], n2p[x]);
-          const int min22 = min(p1p[x], n1p[x]);
-          const int max22 = max(p1p[x], n1p[x]);
+          const int min22 = std::min(p1p[x], n1p[x]);
+          const int max22 = std::max(p1p[x], n1p[x]);
           if (((max22 < min31) ||  max22 == 0 || (max31 < min22) || max31 == 0) &&
             max31 - min31 < thresh && max22 - min22 < thresh)
             dstp[x] = 0xFF;
@@ -991,7 +995,7 @@ bool TComb::checkSceneChange(PlanarFrame* s1, PlanarFrame* s2, int n, IScriptEnv
   {
     if (debug)
     {
-      sprintf_s(buf, "TComb: Frame %d: Not a SceneChange\n", n);
+      snprintf(buf, sizeof(buf), "TComb: Frame %d: Not a SceneChange\n", n);
       OutputDebugString(buf);
     }
     return false;
@@ -1039,7 +1043,7 @@ bool TComb::checkSceneChange(PlanarFrame* s1, PlanarFrame* s2, int n, IScriptEnv
   {
     if (debug)
     {
-      sprintf_s(buf, "TComb: Frame %d: SceneChange detected! (%" PRId64 ",%u)\n", n, diff, diffmaxsc);
+      snprintf(buf, sizeof(buf), "TComb: Frame %d: SceneChange detected! (%" PRId64 ",%lu)\n", n, diff, diffmaxsc);
       OutputDebugString(buf);
     }
 
@@ -1048,7 +1052,7 @@ bool TComb::checkSceneChange(PlanarFrame* s1, PlanarFrame* s2, int n, IScriptEnv
 
   if (debug)
   {
-    sprintf_s(buf, "TComb: Frame %d: Not a SceneChange (%" PRId64 ",%u)\n", n, diff, diffmaxsc);
+    snprintf(buf, sizeof(buf), "TComb: Frame %d: Not a SceneChange (%" PRId64 ",%lu)\n", n, diff, diffmaxsc);
     OutputDebugString(buf);
   }
 

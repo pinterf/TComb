@@ -23,6 +23,7 @@
 
 #include "PlanarFrame.h"
 #include "avs/cpuid.h"
+#include "common.h"
 #include <emmintrin.h>
 #include <stdint.h>
 
