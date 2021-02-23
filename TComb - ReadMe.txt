@@ -1,6 +1,6 @@
                                                                                                       |
                                     TComb for AviSynth v2.6.x                                         |
-                                       v2.1 (22 February 2021)                                        |
+                                       v2.2 (23 February 2021)                                        |
                                            by tritical                                                |
                                        modified by Elegant (v2.0; 17 July 2015)                       |
                                        additional work by pinterf                                     |
@@ -158,6 +158,16 @@ BASIC SETUP/USAGE:
 
 
 CHANGE LIST:
+
+   02/23/2021  v2.2 (pinterf)
+       + Fix: unsave register x64 assembler causing artifacts
+       + Drop all external asm
+       + Rewrite assembler in SIMD intrinsics
+         (Old stuff is not removed yet, only conditionally ignored)
+       + Add CMake build system
+       + Add MinGW/gcc support 
+       + Add linux support (with ENABLE_INTEL_SIMD=off option as well)
+       + Add build instructions to README.md
 
    02/22/2021  v2.1 (pinterf)
        + project forked to https://github.com/pinterf/TComb/ 
