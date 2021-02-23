@@ -1,5 +1,5 @@
 /*
-**                    TComb v2.1 for Avisynth 2.6 and Avisynth+
+**                    TComb v2.x for Avisynth 2.6 and Avisynth+
 **
 **   TComb is a temporal comb filter (it reduces cross-luminance (rainbowing)
 **   and cross-chrominance (dot crawl) artifacts in static areas of the picture).
@@ -31,28 +31,11 @@
 #include "TComb.h"
 #include <stdint.h>
 
+#ifdef INTEL_INTRINSICS
 #include <xmmintrin.h>
 #include <emmintrin.h>
+#endif
 #include <algorithm>
-
-/*
-extern "C" void buildFinalMask_SSE2(const uint8_t * s1p, const uint8_t * s2p, const uint8_t * m1p, uint8_t * dstp, int stride, int width, int height, int thresh);
-extern "C" void andNeighborsInPlace_SSE2(uint8_t * srcp, int stride, int width, int height);
-extern "C" void absDiff_SSE2(const uint8_t * srcp1, const uint8_t * srcp2, uint8_t * dstp, int stride, int width, int height);
-extern "C" void absDiffAndMinMask_SSE2(const uint8_t * srcp1, const uint8_t * srcp2, uint8_t * dstp, int stride, int width, int height);
-extern "C" void absDiffAndMinMaskThresh_SSE2(const uint8_t * srcp1, const uint8_t * srcp2, uint8_t * dstp, int stride, int width, int height, int thresh);
-extern "C" void MinMax_SSE2(const uint8_t * srcp, uint8_t * dstpMin, uint8_t * dstpMax, int src_stride, int dmin_stride, int width, int height, int thresh);
-extern "C" void checkOscillation5_SSE2(const uint8_t * p2p, const uint8_t * p1p, const uint8_t * s1p, const uint8_t * n1p, const uint8_t * n2p, uint8_t * dstp, int stride, int width, int height, int thresh);
-extern "C" void calcAverages_SSE2(const uint8_t * s1p, const uint8_t * s2p, uint8_t * dstp, int stride, int width, int height);
-extern "C" void checkAvgOscCorrelation_SSE2(const uint8_t * s1p, const uint8_t * s2p, const uint8_t * s3p, const uint8_t * s4p, uint8_t * dstp, int stride, int width, int height, int thresh);
-extern "C" void or3Masks_SSE2(const uint8_t * s1p, const uint8_t * s2p, const uint8_t * s3p, uint8_t * dstp, int stride, int width, int height);
-extern "C" void orAndMasks_SSE2(const uint8_t * s1p, const uint8_t * s2p, uint8_t * dstp, int stride, int width, int height);
-extern "C" void andMasks_SSE2(const uint8_t * s1p, const uint8_t * s2p, uint8_t * dstp, int stride, int width, int height);
-extern "C" void checkSceneChange_SSE2(const uint8_t * s1p, const uint8_t * s2p, int stride, int width, int height, int64_t * diffp);
-extern "C" void VerticalBlur3_SSE2(const uint8_t * srcp, uint8_t * dstp, int stride, int width, int height);
-extern "C" void HorizontalBlur3_SSE2(const uint8_t * srcp, uint8_t * dstp, int stride, int width, int height);
-extern "C" void HorizontalBlur6_SSE2(const uint8_t * srcp, uint8_t * dstp, int stride, int width, int height);
-*/
 
 template<typename pixel_t>
 void checkSceneChangePlanar_1_c(const pixel_t* srcp, const pixel_t* nxtp,
@@ -78,6 +61,7 @@ void checkSceneChangePlanar_1_c(const pixel_t* srcp, const pixel_t* nxtp,
 template void checkSceneChangePlanar_1_c<uint8_t>(const uint8_t* srcp, const uint8_t* nxtp,
   int height, int width, int src_pitch, int nxt_pitch, uint64_t& diff);
 
+#ifdef INTEL_INTRINSICS
 void checkSceneChangePlanar_1_SSE2_simd(const uint8_t* prvp, const uint8_t* srcp,
   int height, int width, int prv_pitch, int src_pitch, uint64_t& diffp)
 {
@@ -96,7 +80,9 @@ void checkSceneChangePlanar_1_SSE2_simd(const uint8_t* prvp, const uint8_t* srcp
   __m128i res = _mm_add_epi32(sum, _mm_srli_si128(sum, 8));
   diffp = _mm_cvtsi128_si32(res);
 }
+#endif
 
+#ifdef INTEL_INTRINSICS
 void andMasks_SSE2_simd(const uint8_t* s1p, const uint8_t* s2p, uint8_t* dstp, int stride, int width, int height)
 {
   for (int y = 0; y < height; ++y)
@@ -114,6 +100,7 @@ void andMasks_SSE2_simd(const uint8_t* s1p, const uint8_t* s2p, uint8_t* dstp, i
     dstp += stride;
   }
 }
+#endif
 
 void andMasks_c(const uint8_t* s1p, const uint8_t* s2p, uint8_t* dstp, int stride, int width, int height)
 {
@@ -128,6 +115,7 @@ void andMasks_c(const uint8_t* s1p, const uint8_t* s2p, uint8_t* dstp, int strid
   }
 }
 
+#ifdef INTEL_INTRINSICS
 void orAndMasks_SSE2_simd(const uint8_t* s1p, const uint8_t* s2p, uint8_t* dstp, int stride, int width, int height)
 {
   for (int y = 0; y < height; ++y)
@@ -146,6 +134,7 @@ void orAndMasks_SSE2_simd(const uint8_t* s1p, const uint8_t* s2p, uint8_t* dstp,
     dstp += stride;
   }
 }
+#endif
 
 void orAndMasks_c(const uint8_t* s1p, const uint8_t* s2p, uint8_t* dstp, int stride, int width, int height)
 {
@@ -160,6 +149,7 @@ void orAndMasks_c(const uint8_t* s1p, const uint8_t* s2p, uint8_t* dstp, int str
   }
 }
 
+#ifdef INTEL_INTRINSICS
 void or3Masks_SSE2_simd(const uint8_t* s1p, const uint8_t* s2p, const uint8_t* s3p, uint8_t* dstp, int stride, int width, int height)
 {
   for (int y = 0; y < height; ++y)
@@ -179,6 +169,7 @@ void or3Masks_SSE2_simd(const uint8_t* s1p, const uint8_t* s2p, const uint8_t* s
     dstp += stride;
   }
 }
+#endif
 
 void or3Masks_c(const uint8_t* s1p, const uint8_t* s2p, const uint8_t* s3p, uint8_t* dstp, int stride, int width, int height)
 {
@@ -194,6 +185,7 @@ void or3Masks_c(const uint8_t* s1p, const uint8_t* s2p, const uint8_t* s3p, uint
   }
 }
 
+#ifdef INTEL_INTRINSICS
 void calcAverages_SSE2_simd(const uint8_t* s1p, const uint8_t* s2p, uint8_t* dstp, int stride, int width, int height)
 {
   for (int y = 0; y < height; ++y)
@@ -211,6 +203,7 @@ void calcAverages_SSE2_simd(const uint8_t* s1p, const uint8_t* s2p, uint8_t* dst
     dstp += stride;
   }
 }
+#endif
 
 void calcAverages_c(const uint8_t* s1p, const uint8_t* s2p, uint8_t* dstp, int stride, int width, int height)
 {
@@ -225,6 +218,7 @@ void calcAverages_c(const uint8_t* s1p, const uint8_t* s2p, uint8_t* dstp, int s
   }
 }
 
+#ifdef INTEL_INTRINSICS
 void MinMax_SSE2_simd(const uint8_t* srcp, uint8_t* dstpMin, uint8_t* dstpMax, int src_stride, int dmin_stride, int width, int height, int thresh)
 {
   const uint8_t* srcpp = srcp - src_stride;
@@ -274,6 +268,7 @@ void MinMax_SSE2_simd(const uint8_t* srcp, uint8_t* dstpMin, uint8_t* dstpMax, i
     dstpMax += dmin_stride;
   }
 }
+#endif
 
 void MinMax_c(const uint8_t* srcp, uint8_t* dstpMin, uint8_t* dstpMax, int src_stride, int dmin_stride, int width, int height, int thresh)
 {
@@ -302,6 +297,7 @@ void MinMax_c(const uint8_t* srcp, uint8_t* dstpMin, uint8_t* dstpMax, int src_s
   }
 }
 
+#ifdef INTEL_INTRINSICS
 void absDiff_SSE2_simd(const uint8_t* srcp1, const uint8_t* srcp2, uint8_t* dstp, int stride, int width, int height)
 {
   for (int y = 0; y < height; ++y)
@@ -320,6 +316,7 @@ void absDiff_SSE2_simd(const uint8_t* srcp1, const uint8_t* srcp2, uint8_t* dstp
     dstp += stride;
   }
 }
+#endif
 
 void absDiff_c(const uint8_t* srcp1, const uint8_t* srcp2, uint8_t* dstp, int stride, int width, int height)
 {
@@ -334,6 +331,7 @@ void absDiff_c(const uint8_t* srcp1, const uint8_t* srcp2, uint8_t* dstp, int st
   }
 }
 
+#ifdef INTEL_INTRINSICS
 void buildFinalMask_SSE2_simd(const uint8_t* s1p, const uint8_t* s2p, const uint8_t* m1p, uint8_t* dstp, int stride, int width, int height, int thresh)
 {
   auto thresh_minus1 = _mm_set1_epi8(thresh-1);
@@ -368,6 +366,7 @@ void buildFinalMask_SSE2_simd(const uint8_t* s1p, const uint8_t* s2p, const uint
     dstp += stride;
   }
 }
+#endif
 
 void buildFinalMask_c(const uint8_t* s1p, const uint8_t* s2p, const uint8_t* m1p, uint8_t* dstp, int stride, int width, int height, int thresh)
 {
@@ -388,6 +387,7 @@ void buildFinalMask_c(const uint8_t* s1p, const uint8_t* s2p, const uint8_t* m1p
   }
 }
 
+#ifdef INTEL_INTRINSICS
 void checkOscillation5_SSE2_simd(const uint8_t* p2p, const uint8_t* p1p, const uint8_t* s1p, const uint8_t* n1p, const uint8_t* n2p, uint8_t* dstp, int stride, int width, int height, int thresh)
 {
   int threshm1 = std::min(std::max(thresh - 1, 0), 255);
@@ -439,7 +439,7 @@ void checkOscillation5_SSE2_simd(const uint8_t* p2p, const uint8_t* p1p, const u
     dstp += stride;
   }
 }
-
+#endif
 
 void checkOscillation5_c(const uint8_t* p2p, const uint8_t* p1p, const uint8_t* s1p, const uint8_t* n1p, const uint8_t* n2p, uint8_t* dstp, int stride, int width, int height, int thresh)
 {
@@ -466,6 +466,7 @@ void checkOscillation5_c(const uint8_t* p2p, const uint8_t* p1p, const uint8_t* 
   }
 }
 
+#ifdef INTEL_INTRINSICS
 void absDiffAndMinMaskThresh_SSE2_simd(const uint8_t* srcp1, const uint8_t* srcp2, uint8_t* dstp, int stride, int width, int height, int thresh)
 {
   int threshm1 = std::min(std::max(thresh - 1, 0), 255);
@@ -502,6 +503,7 @@ void absDiffAndMinMaskThresh_SSE2_simd(const uint8_t* srcp1, const uint8_t* srcp
     dstp += stride;
   }
 }
+#endif
 
 void absDiffAndMinMaskThresh_c(const uint8_t* srcp1, const uint8_t* srcp2, uint8_t* dstp, int stride, int width, int height, int thresh)
 {
@@ -524,6 +526,7 @@ void absDiffAndMinMaskThresh_c(const uint8_t* srcp1, const uint8_t* srcp2, uint8
   }
 }
 
+#ifdef INTEL_INTRINSICS
 void absDiffAndMinMask_SSE2_simd(const uint8_t* srcp1, const uint8_t* srcp2, uint8_t* dstp, int stride, int width, int height)
 {
   for (int y = 0; y < height; ++y)
@@ -552,6 +555,7 @@ void absDiffAndMinMask_SSE2_simd(const uint8_t* srcp1, const uint8_t* srcp2, uin
     dstp += stride;
   }
 }
+#endif
 
 void absDiffAndMinMask_c(const uint8_t* srcp1, const uint8_t* srcp2, uint8_t* dstp, int stride, int width, int height)
 {
@@ -570,6 +574,7 @@ void absDiffAndMinMask_c(const uint8_t* srcp1, const uint8_t* srcp2, uint8_t* ds
   }
 }
 
+#ifdef INTEL_INTRINSICS
 void checkAvgOscCorrelation_SSE2_simd(const uint8_t* s1p, const uint8_t* s2p, const uint8_t* s3p, const uint8_t* s4p, uint8_t* dstp, int stride, int width, int height, int thresh)
 {
   int threshm1 = std::min(std::max(thresh - 1, 0), 255);
@@ -610,6 +615,7 @@ void checkAvgOscCorrelation_SSE2_simd(const uint8_t* s1p, const uint8_t* s2p, co
     dstp += stride;
   }
 }
+#endif
 
 void checkAvgOscCorrelation_c(const uint8_t* s1p, const uint8_t* s2p, const uint8_t* s3p, const uint8_t* s4p, uint8_t* dstp, int stride, int width, int height, int thresh)
 {
@@ -630,6 +636,7 @@ void checkAvgOscCorrelation_c(const uint8_t* s1p, const uint8_t* s2p, const uint
   }
 }
 
+#ifdef INTEL_INTRINSICS
 void VerticalBlur3_SSE2_simd(const uint8_t* srcp, uint8_t* dstp, int stride, int width, int height)
 {
   const uint8_t* srcpp = srcp - stride;
@@ -690,6 +697,7 @@ void VerticalBlur3_SSE2_simd(const uint8_t* srcp, uint8_t* dstp, int stride, int
   }
 
 }
+#endif
 
 void VerticalBlur3_c(const uint8_t* srcp, uint8_t* dstp, int stride, int width, int height)
 {
@@ -719,6 +727,7 @@ void VerticalBlur3_c(const uint8_t* srcp, uint8_t* dstp, int stride, int width, 
     dstp[x] = (srcpp[x] + srcp[x] + 1) >> 1;
 }
 
+#ifdef INTEL_INTRINSICS
 // width mod 16 and srcp alignment guaranteed
 void HorizontalBlur3_SSE2_simd(const uint8_t* srcp, uint8_t* dstp, int stride, int width, int height)
 {
@@ -753,6 +762,7 @@ void HorizontalBlur3_SSE2_simd(const uint8_t* srcp, uint8_t* dstp, int stride, i
   }
 
 }
+#endif
 
 void HorizontalBlur3_c(const uint8_t* srcp, uint8_t* dstp, int stride, int width, int height)
 {
@@ -770,6 +780,7 @@ void HorizontalBlur3_c(const uint8_t* srcp, uint8_t* dstp, int stride, int width
   }
 }
 
+#ifdef INTEL_INTRINSICS
 void HorizontalBlur6_SSE2_simd(const uint8_t* srcp, uint8_t* dstp, int stride, int width, int height)
 {
   auto zero = _mm_setzero_si128();
@@ -812,6 +823,7 @@ void HorizontalBlur6_SSE2_simd(const uint8_t* srcp, uint8_t* dstp, int stride, i
     dstp += stride;
   }
 }
+#endif
 
 void HorizontalBlur6_c(const uint8_t* srcp, uint8_t* dstp, int stride, int width, int height)
 {
@@ -831,6 +843,7 @@ void HorizontalBlur6_c(const uint8_t* srcp, uint8_t* dstp, int stride, int width
   }
 }
 
+#ifdef INTEL_INTRINSICS
 void andNeighborsInPlace_SSE2_simd(uint8_t* srcp, int stride, int width, int height)
 {
   uint8_t* srcpp = srcp - stride;
@@ -858,3 +871,4 @@ void andNeighborsInPlace_SSE2_simd(uint8_t* srcp, int stride, int width, int hei
     srcpn += stride;
   }
 }
+#endif

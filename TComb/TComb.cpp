@@ -1,5 +1,5 @@
 /*
-**                    TComb v2.1 for Avisynth 2.6 and Avisynth+
+**                    TComb v2.x for Avisynth 2.6 and Avisynth+
 **
 **   TComb is a temporal comb filter (it reduces cross-luminance (rainbowing)
 **   and cross-chrominance (dot crawl) artifacts in static areas of the picture).
@@ -422,9 +422,11 @@ void TComb::buildFinalMask(PlanarFrame* s1, PlanarFrame* s2, PlanarFrame* m1,
       }
     }
 #else
+#ifdef INTEL_INTRINSICS
     if (cpu & CPUF_SSE2)
       buildFinalMask_SSE2_simd(s1p, s2p, m1p, dstp, stride, width, height, thresh);
     else
+#endif
       buildFinalMask_c(s1p, s2p, m1p, dstp, stride, width, height, thresh);
 #endif
   }
@@ -452,6 +454,7 @@ void TComb::andNeighborsInPlace(PlanarFrame* src, int lc, IScriptEnvironment* en
   srcpn += stride;
 
   // middle
+#ifdef INTEL_INTRINSICS
   if (cpu & CPUF_SSE2)
   {
     const int widtha = (width % 16) ? ((width >> 4) << 4) : width - 16;
@@ -482,6 +485,7 @@ void TComb::andNeighborsInPlace(PlanarFrame* src, int lc, IScriptEnvironment* en
     }
   }
   else
+#endif
   {
     for (int y = 1; y < height - 1; ++y)
     {
@@ -538,9 +542,11 @@ void TComb::absDiff(PlanarFrame* src1, PlanarFrame* src2, PlanarFrame* dst, int 
     }
   }
 #else
+#ifdef INTEL_INTRINSICS
   if (cpu & CPUF_SSE2)
     absDiff_SSE2_simd(srcp1, srcp2, dstp, stride, width, height);
   else
+#endif
     absDiff_c(srcp1, srcp2, dstp, stride, width, height);
 #endif
 }
@@ -575,9 +581,11 @@ void TComb::absDiffAndMinMask(PlanarFrame* src1, PlanarFrame* src2, PlanarFrame*
       dstp += stride;
     }
 #else
+#ifdef INTEL_INTRINSICS
   if (cpu & CPUF_SSE2)
     absDiffAndMinMask_SSE2_simd(srcp1, srcp2, dstp, stride, width, height);
   else
+#endif
     absDiffAndMinMask_c(srcp1, srcp2, dstp, stride, width, height);
 #endif
 }
@@ -619,9 +627,11 @@ void TComb::absDiffAndMinMaskThresh(PlanarFrame* src1, PlanarFrame* src2, Planar
     }
   }
 #else
+#ifdef INTEL_INTRINSICS
   if (cpu & CPUF_SSE2)
     absDiffAndMinMaskThresh_SSE2_simd(srcp1, srcp2, dstp, stride, width, height, thresh);
   else
+#endif
     absDiffAndMinMaskThresh_c(srcp1, srcp2, dstp, stride, width, height, thresh);
 #endif
 }
@@ -712,9 +722,11 @@ void TComb::MinMax(PlanarFrame* src, PlanarFrame* dmin, PlanarFrame* dmax, int l
       }
     }
 #else
+#ifdef INTEL_INTRINSICS
     if (cpu & CPUF_SSE2)
       MinMax_SSE2_simd(srcp, dminp, dmaxp, src_stride, min_stride, width, height, thresh);
     else
+#endif
       MinMax_c(srcp, dminp, dmaxp, src_stride, min_stride, width, height, thresh);
 #endif
   }
@@ -768,9 +780,11 @@ void TComb::checkOscillation5(PlanarFrame* p2, PlanarFrame* p1, PlanarFrame* s1,
       }
     }
 #else
+#ifdef INTEL_INTRINSICS
     if (cpu & CPUF_SSE2)
       checkOscillation5_SSE2_simd(p2p, p1p, s1p, n1p, n2p, dstp, stride, width, height, thresh);
     else
+#endif
       checkOscillation5_c(p2p, p1p, s1p, n1p, n2p, dstp, stride, width, height, thresh);
 #endif
   }
@@ -808,9 +822,11 @@ void TComb::calcAverages(PlanarFrame* s1, PlanarFrame* s2, PlanarFrame* dst, int
       }
     }
 #else
+#ifdef INTEL_INTRINSICS
     if (cpu & CPUF_SSE2)
       calcAverages_SSE2_simd(s1p, s2p, dstp, stride, width, height);
     else
+#endif
       calcAverages_c(s1p, s2p, dstp, stride, width, height);
 #endif
   }
@@ -857,9 +873,11 @@ void TComb::checkAvgOscCorrelation(PlanarFrame* s1, PlanarFrame* s2, PlanarFrame
       }
     }
 #else
+#ifdef INTEL_INTRINSICS
     if (cpu & CPUF_SSE2)
       checkAvgOscCorrelation_SSE2_simd(s1p, s2p, s3p, s4p, dstp, stride, width, height, thresh);
     else
+#endif
       checkAvgOscCorrelation_c(s1p, s2p, s3p, s4p, dstp, stride, width, height, thresh);
 #endif
   }
@@ -899,9 +917,11 @@ void TComb::or3Masks(PlanarFrame* s1, PlanarFrame* s2, PlanarFrame* s3,
       }
     }
 #else
+#ifdef INTEL_INTRINSICS
     if (cpu & CPUF_SSE2)
       or3Masks_SSE2_simd(s1p, s2p, s3p, dstp, stride, width, height);
     else
+#endif
       or3Masks_c(s1p, s2p, s3p, dstp, stride, width, height);
 #endif
   }
@@ -939,9 +959,11 @@ void TComb::orAndMasks(PlanarFrame* s1, PlanarFrame* s2, PlanarFrame* dst, int l
       }
     }
 #else
+#ifdef INTEL_INTRINSICS
     if (cpu & CPUF_SSE2)
       orAndMasks_SSE2_simd(s1p, s2p, dstp, stride, width, height);
     else
+#endif
       orAndMasks_c(s1p, s2p, dstp, stride, width, height);
 #endif
   }
@@ -979,9 +1001,11 @@ void TComb::andMasks(PlanarFrame* s1, PlanarFrame* s2, PlanarFrame* dst, int lc,
       }
   }
 #else
+#ifdef INTEL_INTRINSICS
     if (cpu & CPUF_SSE2)
       andMasks_SSE2_simd(s1p, s2p, dstp, stride, width, height);
     else
+#endif
       andMasks_c(s1p, s2p, dstp, stride, width, height);
 #endif
   }
@@ -1034,9 +1058,11 @@ bool TComb::checkSceneChange(PlanarFrame* s1, PlanarFrame* s2, int n, IScriptEnv
   }
 #else
   uint64_t diff = 0;
+#ifdef INTEL_INTRINSICS
   if (cpu & CPUF_SSE2)
     checkSceneChangePlanar_1_SSE2_simd(s1p, s2p, height, width, stride, stride2, diff);
   else
+#endif
     checkSceneChangePlanar_1_c<uint8_t>(s1p, s2p, height, width, stride, stride2, diff);
 #endif
   if (diff > diffmaxsc)
@@ -1100,9 +1126,11 @@ void TComb::VerticalBlur3(PlanarFrame* src, PlanarFrame* dst, int lc, IScriptEnv
       dstp[x] = (srcpp[x] + srcp[x] + 1) >> 1;
   }
 #else
+#ifdef INTEL_INTRINSICS
   if (cpu & CPUF_SSE2)
     VerticalBlur3_SSE2_simd(srcp, dstp, stride, width, height);
   else
+#endif
     VerticalBlur3_c(srcp, dstp, stride, width, height);
 #endif
 }
@@ -1156,6 +1184,7 @@ void TComb::HorizontalBlur3(PlanarFrame* src, PlanarFrame* dst, int lc, IScriptE
     }
   }
 #else
+#ifdef INTEL_INTRINSICS
   if ((cpu & CPUF_SSE2) && width >= 16) // fixme: >= 32?
   {
     const int widtha = (width >> 4) << 4;
@@ -1179,6 +1208,7 @@ void TComb::HorizontalBlur3(PlanarFrame* src, PlanarFrame* dst, int lc, IScriptE
     }
   }
   else
+#endif
   {
     HorizontalBlur3_c(srcp, dstp, stride, width, height);
   }
@@ -1238,6 +1268,7 @@ void TComb::HorizontalBlur6(PlanarFrame* src, PlanarFrame* dst, int lc, IScriptE
     }
   }
 #else
+#ifdef INTEL_INTRINSICS
   if ((cpu & CPUF_SSE2) && width >= 16) // fixme: >= 32?
   {
     const int widtha = (width >> 4) << 4;
@@ -1263,6 +1294,7 @@ void TComb::HorizontalBlur6(PlanarFrame* src, PlanarFrame* dst, int lc, IScriptE
     }
   }
   else
+#endif
   {
     HorizontalBlur6_c(srcp, dstp, stride, width, height);
   }

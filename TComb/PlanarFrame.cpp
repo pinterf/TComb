@@ -24,8 +24,10 @@
 #include "PlanarFrame.h"
 #include "avs/cpuid.h"
 #include "common.h"
-#include <emmintrin.h>
 #include <stdint.h>
+#ifdef INTEL_INTRINSICS
+#include <emmintrin.h>
+#endif
 
 
 PlanarFrame::PlanarFrame(int cpuFlags)
@@ -385,9 +387,11 @@ PlanarFrame& PlanarFrame::operator=(PlanarFrame &ob2)
 void PlanarFrame::convYUY2to422(const uint8_t *src, uint8_t *py, uint8_t *pu,
   uint8_t *pv, int pitch1, int pitch2Y, int pitch2UV, int width, int height)
 {
+#ifdef INTEL_INTRINSICS
   if ((cpu&CPUF_SSE2) && useSIMD)
     convYUY2to422_SSE2(src, py, pu, pv, pitch1, pitch2Y, pitch2UV, width, height);
   else
+#endif
   {
     width >>= 1;
     for (int y = 0; y < height; ++y)
@@ -408,6 +412,7 @@ void PlanarFrame::convYUY2to422(const uint8_t *src, uint8_t *py, uint8_t *pu,
 }
 
 
+#ifdef INTEL_INTRINSICS
 void PlanarFrame::convYUY2to422_SSE2(const uint8_t *src, uint8_t *py, uint8_t *pu,
   uint8_t *pv, int pitch1, int pitch2Y, int pitch2UV, int width, int height)
 {
@@ -434,13 +439,16 @@ void PlanarFrame::convYUY2to422_SSE2(const uint8_t *src, uint8_t *py, uint8_t *p
     pv += pitch2UV;
   }
 }
+#endif
 
 void PlanarFrame::conv422toYUY2(uint8_t *py, uint8_t *pu, uint8_t *pv,
   uint8_t *dst, int pitch1Y, int pitch1UV, int pitch2, int width, int height)
 {
+#ifdef INTEL_INTRINSICS
   if ((cpu&CPUF_SSE2) && useSIMD)
     conv422toYUY2_SSE2(py, pu, pv, dst, pitch1Y, pitch1UV, pitch2, width, height);
   else
+#endif
   {
     width >>= 1;
     for (int y = 0; y < height; ++y)
@@ -461,6 +469,7 @@ void PlanarFrame::conv422toYUY2(uint8_t *py, uint8_t *pu, uint8_t *pv,
 }
 
 
+#ifdef INTEL_INTRINSICS
 void PlanarFrame::conv422toYUY2_SSE2(uint8_t *py, uint8_t *pu, uint8_t *pv,
   uint8_t *dst, int pitch1Y, int pitch1UV, int pitch2, int width, int height)
 {
@@ -480,6 +489,7 @@ void PlanarFrame::conv422toYUY2_SSE2(uint8_t *py, uint8_t *pu, uint8_t *pv,
     pv += pitch1UV;
   }
 }
+#endif
 
 // Avisynth v2.5.  Copyright 2002 Ben Rudiak-Gould et al.
 // http://www.avisynth.org
