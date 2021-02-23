@@ -174,7 +174,7 @@ void TComb::getFinalMasks(int lc, IScriptEnvironment* env)
       if (tdc->frames[tdc->getCachePos(i - 2)]->sc ||
         tdc->frames[tdc->getCachePos(i - 0)]->sc)
       {
-        for (int j = 0; j < 3; ++j)
+        for (int j = 0; j < tf->msk2->NumComponents(); ++j)
           memset(tf->msk2->GetPtr(j), 0, tf->msk2->GetPitch(j) * tf->msk2->GetHeight(j));
       }
       else
@@ -210,15 +210,26 @@ void TComb::getFinalMasks(int lc, IScriptEnvironment* env)
 TComb::TComb(PClip _child, int _mode, int _fthreshL, int _fthreshC, int _othreshL, int _othreshC,
   bool _map, double _scthresh, bool _debug, int _opt, IScriptEnvironment* env) :
   GenericVideoFilter(_child), map(_map), debug(_debug), fthreshL(_fthreshL), fthreshC(_fthreshC),
-  othreshL(_othreshL), othreshC(_othreshC), mode(_mode), opt(_opt), scthresh(_scthresh)
+  othreshL(_othreshL), othreshC(_othreshC), opt(_opt), scthresh(_scthresh)
 {
+
+  mode = _mode;
+  if (vi.IsY() && mode == 2)
+    mode = 0; // process both is luma only for greyscale
+  if (vi.IsY() && mode == 1)
+    env->ThrowError("TComb: cannot process chroma for a greyscale clip!");
+  if (mode < 0 || mode > 2)
+    env->ThrowError("TComb: mode can only be 0, 1 or 2!");
+
   dstPF = tmpPF = NULL;
   minPF = maxPF = NULL;
   padPF = NULL;
   tdc = NULL;
 
-  if (!vi.IsYV12() && !vi.IsYUY2())
-    env->ThrowError("TComb: Only YV12 and YUY2 colorspace are supported!");
+  if (vi.BitsPerComponent() > 8)
+    env->ThrowError("TComb: Only 8 bit videos are supported!");
+  if (vi.IsRGB())
+    env->ThrowError("TComb: RGB is not supported!");
   if (fthreshC < 1 || fthreshC > 255)
     env->ThrowError("TComb: threshC must be in the range 1 <= fthreshC <= 255!");
   if (fthreshL < 1 || fthreshL > 255)
@@ -232,12 +243,21 @@ TComb::TComb(PClip _child, int _mode, int _fthreshL, int _fthreshC, int _othresh
 
   const int cpuFlags = env->GetCPUFlags();
 
+  // planarFrame is for 8 bit only
   dstPF = new PlanarFrame(vi, cpuFlags);
   tmpPF = new PlanarFrame(vi, cpuFlags);
   minPF = new PlanarFrame(vi, cpuFlags);
   maxPF = new PlanarFrame(vi, cpuFlags);
   padPF = new PlanarFrame(cpuFlags);
-  padPF->createPlanar(vi.height + 4, vi.width + 4, vi.IsYV12() ? 1 : 2);
+  padPF->createPlanar(vi.height + 4, vi.width + 4, 
+    vi.IsYV12() ? PLANAR_420 : 
+    vi.Is420() ? PLANAR_420 :
+    vi.Is422() || vi.IsYUY2() ? PLANAR_422 :
+    vi.IsYV411() ? PLANAR_411 :
+    vi.Is444() ? PLANAR_444 :
+    vi.IsY() ? PLANAR_400 :
+    PLANAR_420
+  );
   tdc = new TCombCache(21, vi, cpuFlags);
 
   if (scthresh < 0.0)
@@ -269,13 +289,14 @@ void TComb::buildFinalFrame(PlanarFrame* p2, PlanarFrame* p1, PlanarFrame* src,
   PlanarFrame* n1, PlanarFrame* n2, PlanarFrame* m1, PlanarFrame* m2, PlanarFrame* m3,
   PlanarFrame* dst, int lc, IScriptEnvironment* env)
 {
+  const int planecount = dst->NumComponents(); // 1 or 3
   if (!map)
     dst->copyFrom(*src);
   else
-    for (int b = 0; b < 3; ++b)
+    for (int b = 0; b < planecount; ++b)
       memset(dst->GetPtr(b), 0, dst->GetPitch(b) * dst->GetHeight(b));
 
-  int start = 0, stop = 3;
+  int start = 0, stop = planecount;
   getStartStop(lc, start, stop);
   MinMax(src, minPF, maxPF, lc, env);
   for (int b = start; b < stop; ++b)
@@ -389,7 +410,8 @@ void TComb::buildFinalMask(PlanarFrame* s1, PlanarFrame* s2, PlanarFrame* m1,
 {
   const int cpu = opt == 0 ? 0 : env->GetCPUFlags();
 
-  int start = 0, stop = 3;
+  const int planecount = dst->NumComponents(); // 1 or 3
+  int start = 0, stop = planecount;
   getStartStop(lc, start, stop);
   for (int b = start; b < stop; ++b)
   {
@@ -641,7 +663,8 @@ void TComb::absDiffAndMinMaskThresh(PlanarFrame* src1, PlanarFrame* src2, Planar
 
 void TComb::copyPad(PlanarFrame* src, PlanarFrame* dst, int lc, IScriptEnvironment* env)
 {
-  int start = 0, stop = 3;
+  const int planecount = dst->NumComponents(); // 1 or 3
+  int start = 0, stop = planecount;
   getStartStop(lc, start, stop);
   for (int b = start; b < stop; ++b)
   {
@@ -655,8 +678,8 @@ void TComb::copyPad(PlanarFrame* src, PlanarFrame* dst, int lc, IScriptEnvironme
       height -= 2;
       width -= 2;
     }
-    else if (b > 0 && vi.IsYUY2())
-      height -= 2;
+    else if (b > 0 && (vi.IsYUY2() || vi.GetPlaneHeightSubsampling(PLANAR_U) == 0))
+      height -= 2; // when no vertial subsampling
 
     int pitch = dst->GetPitch(b);
     uint8_t* dstp = dst->GetPtr(b) + pitch * 2;
@@ -682,7 +705,8 @@ void TComb::MinMax(PlanarFrame* src, PlanarFrame* dmin, PlanarFrame* dmax, int l
 
   copyPad(src, padPF, lc, env);
 
-  int start = 0, stop = 3;
+  const int planecount = src->NumComponents(); // 1 or 3
+  int start = 0, stop = planecount;
   getStartStop(lc, start, stop);
   for (int b = start; b < stop; ++b)
   {
@@ -740,7 +764,8 @@ void TComb::checkOscillation5(PlanarFrame* p2, PlanarFrame* p1, PlanarFrame* s1,
 {
   const int cpu = opt == 0 ? 0 : env->GetCPUFlags();
 
-  int start = 0, stop = 3;
+  const int planecount = dst->NumComponents(); // 1 or 3
+  int start = 0, stop = planecount;
   getStartStop(lc, start, stop);
   for (int b = start; b < stop; ++b)
   {
@@ -798,7 +823,8 @@ void TComb::calcAverages(PlanarFrame* s1, PlanarFrame* s2, PlanarFrame* dst, int
 {
   const int cpu = opt == 0 ? 0 : env->GetCPUFlags();
 
-  int start = 0, stop = 3;
+  const int planecount = dst->NumComponents(); // 1 or 3
+  int start = 0, stop = planecount;
   getStartStop(lc, start, stop);
   for (int b = start; b < stop; ++b)
   {
@@ -840,7 +866,8 @@ void TComb::checkAvgOscCorrelation(PlanarFrame* s1, PlanarFrame* s2, PlanarFrame
 {
   const int cpu = opt == 0 ? 0 : env->GetCPUFlags();
 
-  int start = 0, stop = 3;
+  const int planecount = dst->NumComponents(); // 1 or 3
+  int start = 0, stop = planecount;
   getStartStop(lc, start, stop);
   for (int b = start; b < stop; ++b)
   {
@@ -891,7 +918,8 @@ void TComb::or3Masks(PlanarFrame* s1, PlanarFrame* s2, PlanarFrame* s3,
 {
   const int cpu = opt == 0 ? 0 : env->GetCPUFlags();
 
-  int start = 0, stop = 3;
+  const int planecount = dst->NumComponents(); // 1 or 3
+  int start = 0, stop = planecount;
   getStartStop(lc, start, stop);
   for (int b = start; b < stop; ++b)
   {
@@ -935,7 +963,8 @@ void TComb::orAndMasks(PlanarFrame* s1, PlanarFrame* s2, PlanarFrame* dst, int l
 {
   const int cpu = opt == 0 ? 0 : env->GetCPUFlags();
 
-  int start = 0, stop = 3;
+  const int planecount = dst->NumComponents(); // 1 or 3
+  int start = 0, stop = planecount;
   getStartStop(lc, start, stop);
   for (int b = start; b < stop; ++b)
   {
@@ -977,7 +1006,8 @@ void TComb::andMasks(PlanarFrame* s1, PlanarFrame* s2, PlanarFrame* dst, int lc,
 {
   const int cpu = opt == 0 ? 0 : env->GetCPUFlags();
 
-  int start = 0, stop = 3;
+  const int planecount = dst->NumComponents(); // 1 or 3
+  int start = 0, stop = planecount;
   getStartStop(lc, start, stop);
   for (int b = start; b < stop; ++b)
   {
