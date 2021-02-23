@@ -1,5 +1,5 @@
 /*
-**                    TComb v2.1 for Avisynth 2.6 and Avisynth+
+**                    TComb v2.x for Avisynth 2.6 and Avisynth+
 **
 **   TComb is a temporal comb filter (it reduces cross-luminance (rainbowing)
 **   and cross-chrominance (dot crawl) artifacts in static areas of the picture).
@@ -28,13 +28,17 @@
 **   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+#if defined(_WIN32) && !defined(INTEL_INTRINSICS)
+#error Forgot to set INTEL_INTRINSICS? Comment out this line if not
+#endif
+
 #include "avisynth.h"
 #include "common.h"
 #include <stdint.h>
 #include <stdio.h>
 #include "PlanarFrame.h"
 
-#define VERSION "v2.1"
+#define VERSION "v2.2"
 
 //#define OLD_ASM
 
