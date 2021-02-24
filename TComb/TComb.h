@@ -38,7 +38,8 @@
 #include <stdio.h>
 #include "PlanarFrame.h"
 
-#define VERSION "v2.2"
+// version appears in .rc as well
+#define VERSION "v2.3"
 
 //#define OLD_ASM
 
