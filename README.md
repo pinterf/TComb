@@ -12,7 +12,7 @@ The syntax and parameters are identical to the original TComb with the exception
 
 ### Changes
 
-In 2015 many changes were made when updating TComb in order to improve speed (see full changelog for more details):
+In 2015 Elegant made many changes when updating TComb in order to improve speed (see full changelog for more details):
 
 * Removed buffering of frames/info that weren't actually used
 * Switched to AVS 2.6 API
@@ -22,7 +22,7 @@ In 2015 many changes were made when updating TComb in order to improve speed (se
 * Removed/changed "opt" parameter
 
 In 2021 came a general bugfix release by pinterf.
-Added linux port, external assembler was rewritten in SIMD intrinsics.
+Added linux port, the missing 8 bit Y and YUV formats, external assembler was rewritten in SIMD intrinsics.
 
 ### Programmer Notes
 
@@ -57,11 +57,15 @@ Linux
 
   Useful hints:        
    build after clean:
+
         cmake --build build --clean-first
 
    Force no asm support
+
         cmake -B build -S . -DENABLE_INTEL_SIMD:bool=off
+
    delete cmake cache
+
         rm build/CMakeCache.txt
 
 * Find binaries at

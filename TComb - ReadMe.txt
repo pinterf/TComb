@@ -1,8 +1,8 @@
                                                                                                       |
-                                    TComb for AviSynth v2.6.x                                         |
-                                       v2.2 (23 February 2021)                                        |
+                                         TComb for AviSynth                                           |
+                                       v2.3 (24 February 2021)                                        |
                                            by tritical                                                |
-                                       modified by Elegant (v2.0; 17 July 2015)                       |
+                                   modified by Elegant (v2.0; 17 July 2015)                           |
                                        additional work by pinterf                                     |
                                                                                                       |
                                             HELP FILE                                                 |
@@ -17,7 +17,9 @@ INFO:
    (dot crawl) artifacts in static areas of the picture).  It will ONLY work with NTSC material, and
    WILL NOT work with telecined material where the rainbowing/dotcrawl was introduced prior to the
    telecine process!  It must be used before ivtc or deinterlace in order to work.  In terms of what
-   it does it is similar to guavacomb/dedot. TComb currently supports YV12 and YUY2 colorspaces.
+   it does it is similar to guavacomb/dedot.
+
+      TComb currently supports Y8, YV12, YV16, YV24, YV411 and YUY2 colorspaces.
 
       TComb does support seeking... that is, jumping to a random frame will produce the same result
    as if you had linearly run up to that frame.  For dot crawl removal tcomb requires at least 3
@@ -42,6 +44,8 @@ PARAMETERS:
            0 - process luma only    (dot crawl removal)
            1 - process chroma only  (rainbow removal)
            2 - process both
+
+       For greyscale clips mode=0 is used regardless the settings
 
        default:  2  (int)
 
@@ -159,58 +163,51 @@ BASIC SETUP/USAGE:
 
 CHANGE LIST:
 
-   02/23/2021  v2.2 (pinterf)
-       + Fix: unsave register x64 assembler causing artifacts
-       + Drop all external asm
-       + Rewrite assembler in SIMD intrinsics
-         (Old stuff is not removed yet, only conditionally ignored)
-       + Add CMake build system
-       + Add MinGW/gcc support 
-       + Add linux support (with ENABLE_INTEL_SIMD=off option as well)
-       + Add build instructions to README.md
+** v2.3 (20210224 pinterf)**
+- Y8, YV16, YV24, YV411 support
 
-   02/22/2021  v2.1 (pinterf)
-       + project forked to https://github.com/pinterf/TComb/ 
-       + param 'opt' is back for debug. 0 means pure C code
-       + Fix bug in x64 assembler buildFinalMask_SSE2
-       + Fix crash in 32bit version of VerticalBlur3_SSE2
-       + Fix: scenechange SSE2 did not work
-       + Fix: x64 assembler HorizontalBlur6_SSE2
-       + Fix: HorizontalBlur6: C only did top 2 lines. SSE2 bad top 2 lines
-       + Fix: HorizontalBlur3_SSE2 artifacts (both x86 and x64)
-       + Fix: HorizontalBlur3_SSE2 missing rounder (both x86 and x64)
-       (now C and SSE2 is giving identical results)
-       + Code:
-           + Update to Visual Studio 2019
-           + update to actual Avisynth+ headers
-           + clang-friendly code
-           + removed memcpy and bitblt variants
-           + replaced planarframes module with the one I updated in tivtc project for 
-             avisynth+ and hbd preparation    
-           + Fix debug build configuration in VS project settings
+** v2.2 (20210223 pinterf)**
+- Fix: unsave register x64 assembler causing artifacts
+- Drop all external asm
+- Rewrite assembler in SIMD intrinsics (old stuff is not removed yet, only conditionally ignored)
+- Add CMake build system
+- Add MinGW/gcc support 
+- Add linux support (with ENABLE_INTEL_SIMD=off option as well)
+- Add build instructions to README.md
 
-   07/26/2015  v2.0.0.1 (Elegant)
-       + Corrected the masks used in HorizontalBlur6 for x64.
+** v2.1 (20210222 pinterf)**
+- project forked to https://github.com/pinterf/TComb/ 
+- param 'opt' is back for debug. 0 means pure C code
+- Fix bug in x64 assembler buildFinalMask_SSE2
+- Fix crash in 32bit version of VerticalBlur3_SSE2
+- Fix: scenechange SSE2 did not work
+- Fix: x64 assembler HorizontalBlur6_SSE2
+- Fix: HorizontalBlur6: C only did top 2 lines. SSE2 bad top 2 lines
+- Fix: HorizontalBlur3_SSE2 artifacts (both x86 and x64)
+- Fix: HorizontalBlur3_SSE2 missing rounder (both x86 and x64) (now C and SSE2 is giving identical results)
+- Code:
+  - Update to Visual Studio 2019
+  - update to actual Avisynth+ headers
+  - clang-friendly code
+  - removed memcpy and bitblt variants
+  - replaced planarframes module with the one I updated in tivtc project for Avisynth+ and hbd preparation    
+  - Fix debug build configuration in VS project settings
 
-	   
-   07/17/2015  v2.0 (Elegant)
+** v2.0.0.1 (20150726 Elegant)**
+- Corrected the masks used in HorizontalBlur6 for x64.
 
-       + Removed buffering of frames/info that weren't actually used (was there for
-         development/testing purposes). Should save a lot of RAM usage.
-       + Switched to AVS 2.6 API since AviSynth 2.6.0 was released.
-	   + Added x64 support which also utilizes SSE2. This also includes some missing
-	     SSE2 functions (andNeighborsInPlace_SSE2).
-	   + Restructured debug and error messages so that it was apparent that TComb was
-	     responsible.
-	   - Removed MMX/ISSE support as times have changed and the support was not going to
-	     be carried over to x64.
-	   - Removed "opt" parameter. TComb will now use SSE2 if available and will fallback
-	     on C++ if it is not supported.
+** v2.0 (20150717 Elegant)**
 
+- Removed buffering of frames/info that weren't actually used (was there for
+  development/testing purposes). Should save a lot of RAM usage.
+- Switched to AVS 2.6 API since AviSynth 2.6.0 was released.
+- Added x64 support which also utilizes SSE2. This also includes some missing SSE2 functions (andNeighborsInPlace_SSE2).
+- Restructured debug and error messages so that it was apparent that TComb was responsible.
+- Removed MMX/ISSE support as times have changed and the support was not going to be carried over to x64.
+- Removed "opt" parameter. TComb will now use SSE2 if available and will fallback on C++ if it is not supported.
 
 End of tritical version history
 ------------------------------------------------------------------------
-		 
 
    05/16/2006  v2.0 Beta 2
 
